@@ -1,11 +1,11 @@
 /* Prueba Sensor de Luz BH1750
-   Trabajo Practico Integrador
-
-   Materia: Seminario de Informatica y Telecomunicaciones (ST).
-   Grupo: 3.
-   Integrantes: Santiago Eulmesekian, Mateo Iadarola, Ariel Rakowszczyk, Santiago Rapetti y Ariel Slonimsqui.
-   Profesor: Mirko Veckiardo.
-
+ * Trabajo Practico Integrador
+ *  
+ * Materia: Seminario de Informatica y Telecomunicaciones (ST).
+ * Grupo: 3.
+ * Integrantes: Santiago Eulmesekian, Mateo Iadarola, Ariel Rakowszczyk, Santiago Rapetti y Ariel Slonimsqui.
+ * Profesor: Mirko Veckiardo.
+ *
 */
 
 #include <BH1750.h>
