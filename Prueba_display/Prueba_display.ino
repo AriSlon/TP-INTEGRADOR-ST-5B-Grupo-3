@@ -1,26 +1,70 @@
-//YWROBOT
-//Compatible with the Arduino IDE 1.0
-//Library version:1.1
+/* Prueba Display LCD 20x4
+ * Trabajo Practico Integrador 
+ * 
+ * Materia: Seminario de Informatica y Telecomunicaciones (ST).
+ * Alumnos: Santiago Eulmesekian, Mateo Iadarola, Ariel Rakowszczyk, Santiago Rapetti y Ariel Slonimsqui.
+ * Profesor: Mirko Veckiardo.
+ * 
+ */
+
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+int estadoMaquina;
 
-void setup()
-{
-  lcd.init();                      // initialize the lcd 
-  // Print a message to the LCD.
+unsigned long milisActuales;
+unsigned long milisPrevios;
+
+
+LiquidCrystal_I2C lcd(0x27, 20, 4); 
+
+void setup() {
+  
+  lcd.init();                      
   lcd.backlight();
-  lcd.setCursor(3,0);
-  lcd.print("Hello, world!");
-  lcd.setCursor(2,1);
-  lcd.print("Ywrobot Arduino!");
-   lcd.setCursor(0,2);
-  lcd.print("Arduino LCM IIC 2004");
-   lcd.setCursor(2,3);
-  lcd.print("Power By Ec-yuan!");
+
 }
 
 
-void loop()
-{
+void loop() {
+
+  milisActuales = millis();
+
+  switch (estadoMaquina) {
+
+    case 0:
+
+      lcd.setCursor(0, 0);
+      lcd.print("Test Funcionamiento");
+      lcd.setCursor(0, 1);
+      lcd.print("Pantalla LCD");
+      lcd.setCursor(0, 2);
+      lcd.print("20x4 I2C");
+
+
+      if ((milisActuales - milisPrevios) > 6000) {
+
+
+        estadoMaquina = 1;
+        milisPrevios = milisActuales;
+
+      }
+
+      break;
+
+    case 1:
+
+      lcd.clear();
+      lcd.setCursor(3, 1);
+      lcd.print("Hola Veckiardo");
+
+      estadoMaquina = 2;
+      
+      break;
+
+      case 2:
+
+      break;
+
+  }
+
 }
