@@ -1,6 +1,10 @@
-/* Grupo 3 - Slonimsqui Rapetti Rakowszczyk Iadarola Eulmesekian
- * 23/6
- * Prueba Sensor de temperatura BMP280
+/* Prueba Sensor de Temperatura BMP280
+ * Trabajo Practico Integrador 
+ * 
+ * Materia: Seminario de Informatica y Telecomunicaciones (ST).
+ * Grupo: 3.
+ * Integrantes: Santiago Eulmesekian, Mateo Iadarola, Ariel Rakowszczyk, Santiago Rapetti y Ariel Slonimsqui.
+ * Profesor: Mirko Veckiardo.
  * 
  */
 
@@ -13,13 +17,19 @@ Adafruit_BMP280 bmp; // I2C
 
 
 void setup() {
+  
   Serial.begin(9600);
-  while ( !Serial ) delay(100);   // wait for native usb
+  
+  while ( !Serial ) delay(100); 
+  
   Serial.println(F("BMP280 test"));
+  
   unsigned status;
-  //status = bmp.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
+
   status = bmp.begin(0x76);
+  
   if (!status) {
+    
     Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
                       "try a different address!"));
     Serial.print("SensorID was: 0x"); Serial.println(bmp.sensorID(),16);
