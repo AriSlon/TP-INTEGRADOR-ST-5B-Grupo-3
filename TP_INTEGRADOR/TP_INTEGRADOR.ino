@@ -10,7 +10,15 @@
 #define PIN_BOTON_3 32
 #define PIN_BOTON_4 33
 #define PIN_BOTON_5 25
-#define PIN_SENSOR 36
+#define PIN_SENSOR_HUMEDAD 2
+#define PIN_RELE_COOLER 15
+#define PIN_LED_ROJO 12
+#define PIN_LED_AMARILLO 14
+#define PIN_LED_VERDE 27
+
+
+#define BUZZER_PIN 4    // Pin del buzzer
+#define BUZZER_CHANNEL 0 // Canal PWM del buzzer
 
 
 Adafruit_BMP280 bmp; // I2C
@@ -25,11 +33,14 @@ int estadoBoton2;
 int estadoBoton3;
 int estadoBoton4;
 int estadoBoton5;
-int estadoMaquina;
+int estadoMaquinaGeneral;
 
 unsigned long milisActuales;
 unsigned long milisPrevios;
 
+bool estadoCooler;
+
+uint16_t lux;
 
 void setup() {
 
@@ -40,8 +51,11 @@ void setup() {
   pinMode(PIN_BOTON_3, INPUT);
   pinMode(PIN_BOTON_4, INPUT);
   pinMode(PIN_BOTON_5, INPUT);
-  pinMode(16, OUTPUT);
-  pinMode(13, OUTPUT);
+  pinMode(PIN_RELE_COOLER, OUTPUT);
+  pinMode(PIN_LED_ROJO, OUTPUT);
+  pinMode(PIN_LED_AMARILLO, OUTPUT);
+  pinMode(PIN_LED_VERDE, OUTPUT);
+
 
   while ( !Serial ) delay(100);
 
@@ -78,6 +92,12 @@ void setup() {
 
   lcd.init();
   lcd.backlight();
+  lcd.clear();
+
+
+  ledcSetup(BUZZER_CHANNEL, 2000, 8); // Configurar el canal PWM
+  ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL); // Asociar el pin al canal PWM
+  ledcWrite(BUZZER_CHANNEL, 0);
 
 }
 
@@ -101,6 +121,70 @@ void loop() {
   Serial.println(estadoBoton4);
   Serial.print("Boton 5: ");
   Serial.println(estadoBoton5);
+
+  humedad = analogRead(PIN_SENSOR_HUMEDAD);
+  Serial.println(humedad);
+
+  lux = lightMeter.readLightLevel();
+
+  if (PIN_RELE_COOLER == HIGH) {
+
+    estadoCooler = 1;
+  }
+
+  if (PIN_RELE_COOLER == LOW) {
+
+    estadoCooler = 0;
+  }
+
+  maquinaDeEstadosGeneral();
+
+}
+
+
+void maquinaDeEstadosGeneral () {
+
+  switch (estadoMaquinaGeneral) {
+
+    case 0:
+
+      pantalla1();
+
+      break;
+
+  }
+}
+
+void pantalla1() {
+
+  lcd.setCursor(0, 0);
+  lcd.print("Temperatura: ");
+  lcd.print(bmp.readTemperature());
+  lcd.println(" C");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Humedad: ");
+  lcd.print(humedad);
+
+  lcd.setCursor(0, 2);
+  lcd.print("Luz: ");
+  lcd.print(lux);
+  lcd.println(" lx");
+
+  lcd.setCursor(0, 3);
+  lcd.print("Cooler: ");
+
+  if (estadoCooler == 1) {
+    lcd.setCursor(8, 3);
+    lcd.print("Activado");
+  }
+
+  if (estadoCooler == 0) {
+    lcd.setCursor(8, 3);
+    lcd.print("Desactivado");
+  }
+
+
 
 }
 
@@ -126,7 +210,7 @@ void loop() {
 
   void loop() {
 
-  humedad = analogRead(PIN_SENSOR);
+  humedad = analogRead(PIN_SENSOR_HUMEDAD);
   Serial.println(humedad);
 
   }
@@ -177,17 +261,34 @@ void loop() {
 
   void loop() {
 
-  digitalWrite(16, HIGH);
-  digitalWrite(13, HIGH);
+  Serial.print(digitalRead(13));
+  ledcWrite(BUZZER_CHANNEL, 128);
+
+  delay(2000);
+
+  ledcWrite(BUZZER_CHANNEL, 0);
+
+  delay(2000);
+
+  }
+
+  void loop() {
+
+  digitalWrite(PIN_RELE_COOLER, HIGH);
 
   delay(5000);
 
-  digitalWrite(16, LOW);
-  digitalWrite(13, LOW);
+  digitalWrite(PIN_RELE_COOLER, LOW);
 
   delay(5000);
 
   }
+
+  void loop() {
+
+  digitalWrite(PIN_LED_ROJO, HIGH);
+  digitalWrite(PIN_LED_AMARILLO, HIGH);
+  digitalWrite(PIN_LED_VERDE, HIGH);
 
 
 */
