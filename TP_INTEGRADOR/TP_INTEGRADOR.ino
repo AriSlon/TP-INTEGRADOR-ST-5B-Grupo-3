@@ -41,6 +41,7 @@ unsigned long milisPrevios;
 bool estadoCooler;
 
 uint16_t lux;
+int luz;
 
 void setup() {
 
@@ -48,7 +49,7 @@ void setup() {
 
   pinMode(PIN_BOTON_1, INPUT);
   pinMode(PIN_BOTON_2, INPUT);
-  pinMode(PIN_BOTON_3, INPUT);
+  pinMode(PIN_BOTON_3, INPUT_PULLUP);
   pinMode(PIN_BOTON_4, INPUT);
   pinMode(PIN_BOTON_5, INPUT);
   pinMode(PIN_RELE_COOLER, OUTPUT);
@@ -122,10 +123,16 @@ void loop() {
   Serial.print("Boton 5: ");
   Serial.println(estadoBoton5);
 
+  digitalWrite(PIN_LED_VERDE, HIGH);
+  digitalWrite(PIN_LED_AMARILLO, HIGH);
+  digitalWrite(PIN_LED_ROJO, HIGH);
+
   humedad = analogRead(PIN_SENSOR_HUMEDAD);
   Serial.println(humedad);
 
   lux = lightMeter.readLightLevel();
+
+  luz = map(lux, 0, 65535, 0, 100);
 
   if (PIN_RELE_COOLER == HIGH) {
 
@@ -168,8 +175,9 @@ void pantalla1() {
 
   lcd.setCursor(0, 2);
   lcd.print("Luz: ");
-  lcd.print(lux);
-  lcd.println(" lx");
+  lcd.print(luz);
+  lcd.println("%");
+
 
   lcd.setCursor(0, 3);
   lcd.print("Cooler: ");
@@ -291,4 +299,25 @@ void pantalla1() {
   digitalWrite(PIN_LED_VERDE, HIGH);
 
 
+  #define PIN_LED_ROJO 12
+  #define PIN_LED_AMARILLO 14
+  #define PIN_LED_VERDE 27
+
+  void setup() {
+  // put your setup code here, to run once:
+
+  pinMode(PIN_LED_ROJO, OUTPUT);
+  pinMode(PIN_LED_AMARILLO, OUTPUT);
+  pinMode(PIN_LED_VERDE, OUTPUT);
+
+
+  }
+
+  void loop() {
+
+  digitalWrite(PIN_LED_VERDE, HIGH);
+  digitalWrite(PIN_LED_AMARILLO, HIGH);
+  digitalWrite(PIN_LED_ROJO, HIGH);
+
+  }
 */
