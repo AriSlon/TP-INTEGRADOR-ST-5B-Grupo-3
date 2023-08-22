@@ -33,7 +33,6 @@ BH1750 lightMeter(0x23);
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 
-float humedad;
 
 int estadoBoton1;
 int estadoBoton2;
@@ -47,10 +46,11 @@ unsigned long milisPrevios;
 
 bool estadoCooler;
 
-uint16_t lux;
+int luzPorcentaje;
 int luz;
 
-int senaladorMenu;
+int humedad;
+int humedadPorcentaje;
 
 void setup() {
 
@@ -67,15 +67,15 @@ void setup() {
   pinMode(PIN_LED_VERDE, OUTPUT);
 
 
-  /*while ( !Serial ) delay(100);
+  // /*while ( !Serial ) delay(100);
 
-    Serial.println(F("BMP280 test"));
+  Serial.println(F("BMP280 test"));
 
-    unsigned status;
+  unsigned status;
 
-    status = bmp.begin(0x76);
+  status = bmp.begin(0x76);
 
-    if (!status) {
+  if (!status) {
 
     Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
                      "try a different address!"));
@@ -85,17 +85,17 @@ void setup() {
     Serial.print("        ID of 0x60 represents a BME 280.\n");
     Serial.print("        ID of 0x61 represents a BME 680.\n");
     while (1) delay(10);
-    }
+  }
 
-    // Default settings from datasheet.
+  // Default settings from datasheet.
 
-    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     // Operating Mode.
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     // Operating Mode.
                   Adafruit_BMP280::SAMPLING_X2,     // Temp. oversampling
                   Adafruit_BMP280::SAMPLING_X16,    // Pressure oversampling
                   Adafruit_BMP280::FILTER_X16,      // Filtering.
                   Adafruit_BMP280::STANDBY_MS_500); // Standby time.
 
-  */
+  //*/
 
   Wire.begin();
 
@@ -112,7 +112,7 @@ void setup() {
   ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL); // Asociar el pin al canal PWM
   ledcWrite(BUZZER_CHANNEL, 0);
 
-  lcd.setCursor(senaladorMenu, 19);
+  lcd.setCursor(0, 19);
   lcd.print("*");
 
 }
@@ -120,6 +120,8 @@ void setup() {
 
 
 void loop() {
+
+  milisActuales = millis();
 
   estadoBoton1 = digitalRead(PIN_BOTON_1);
   estadoBoton2 = digitalRead(PIN_BOTON_2);
@@ -143,11 +145,11 @@ void loop() {
   digitalWrite(PIN_LED_ROJO, HIGH);
 
   humedad = analogRead(PIN_SENSOR_HUMEDAD);
-  Serial.println(humedad);
+  humedadPorcentaje = map(humedad, 0, 2950, 100, 0);
 
-  lux = lightMeter.readLightLevel();
+  luz = lightMeter.readLightLevel();
 
-  luz = map(lux, 0, 65535, 0, 100);
+  luzPorcentaje = map(luz, 0, 65535, 0, 100);
 
   if (PIN_RELE_COOLER == HIGH) {
 
@@ -170,21 +172,26 @@ void maquinaDeEstadosGeneral () {
 
     case 0:
 
-      pantalla1();
+
+
+      if ((milisActuales - milisPrevios) > 1000) {
+
+        lcd.clear();
+        pantalla1();
+
+        milisPrevios = milisActuales;
+
+      }
 
       if (PIN_BOTON_ABAJO == 1) {
 
-        senaladorMenu = senaladorMenu + 1;
-        lcd.setCursor(senaladorMenu, 19);
-        lcd.print("*");
+
         estadoMaquinaGeneral = 1;
       }
 
       if (PIN_BOTON_ARRIBA == 1) {
 
-        senaladorMenu = senaladorMenu - 1;
-        lcd.setCursor(senaladorMenu, 19);
-        lcd.print("*");
+
         estadoMaquinaGeneral = 1;
       }
 
@@ -203,16 +210,14 @@ void pantalla1() {
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
   lcd.print(bmp.readTemperature());
-  lcd.println(" C");
 
   lcd.setCursor(0, 1);
   lcd.print("Humedad: ");
-  lcd.print(humedad);
+  lcd.print(humedadPorcentaje);
 
   lcd.setCursor(0, 2);
   lcd.print("Luz: ");
-  lcd.print(luz);
-  lcd.println("%");
+  lcd.print(luzPorcentaje);
 
 
   lcd.setCursor(0, 3);
