@@ -10,6 +10,13 @@
 #define PIN_BOTON_3 32
 #define PIN_BOTON_4 33
 #define PIN_BOTON_5 25
+
+#define PIN_BOTON_DERECHA 34
+#define PIN_BOTON_IZQUIERDA 35
+#define PIN_BOTON_ARRIBA 32
+#define PIN_BOTON_ABAJO 33
+#define PIN_BOTON_ENTER 25
+
 #define PIN_SENSOR_HUMEDAD 2
 #define PIN_RELE_COOLER 15
 #define PIN_LED_ROJO 12
@@ -43,6 +50,8 @@ bool estadoCooler;
 uint16_t lux;
 int luz;
 
+int senaladorMenu;
+
 void setup() {
 
   Serial.begin(9600);
@@ -58,15 +67,15 @@ void setup() {
   pinMode(PIN_LED_VERDE, OUTPUT);
 
 
-  while ( !Serial ) delay(100);
+  /*while ( !Serial ) delay(100);
 
-  Serial.println(F("BMP280 test"));
+    Serial.println(F("BMP280 test"));
 
-  unsigned status;
+    unsigned status;
 
-  status = bmp.begin(0x76);
+    status = bmp.begin(0x76);
 
-  if (!status) {
+    if (!status) {
 
     Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
                      "try a different address!"));
@@ -76,14 +85,17 @@ void setup() {
     Serial.print("        ID of 0x60 represents a BME 280.\n");
     Serial.print("        ID of 0x61 represents a BME 680.\n");
     while (1) delay(10);
-  }
+    }
 
-  /* Default settings from datasheet. */
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
-                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+    // Default settings from datasheet.
+
+    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     // Operating Mode.
+                  Adafruit_BMP280::SAMPLING_X2,     // Temp. oversampling
+                  Adafruit_BMP280::SAMPLING_X16,    // Pressure oversampling
+                  Adafruit_BMP280::FILTER_X16,      // Filtering.
+                  Adafruit_BMP280::STANDBY_MS_500); // Standby time.
+
+  */
 
   Wire.begin();
 
@@ -99,6 +111,9 @@ void setup() {
   ledcSetup(BUZZER_CHANNEL, 2000, 8); // Configurar el canal PWM
   ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL); // Asociar el pin al canal PWM
   ledcWrite(BUZZER_CHANNEL, 0);
+
+  lcd.setCursor(senaladorMenu, 19);
+  lcd.print("*");
 
 }
 
@@ -157,15 +172,36 @@ void maquinaDeEstadosGeneral () {
 
       pantalla1();
 
+      if (PIN_BOTON_ABAJO == 1) {
+
+        senaladorMenu = senaladorMenu + 1;
+        lcd.setCursor(senaladorMenu, 19);
+        lcd.print("*");
+        estadoMaquinaGeneral = 1;
+      }
+
+      if (PIN_BOTON_ARRIBA == 1) {
+
+        senaladorMenu = senaladorMenu - 1;
+        lcd.setCursor(senaladorMenu, 19);
+        lcd.print("*");
+        estadoMaquinaGeneral = 1;
+      }
+
       break;
 
+    case 1:
+
+      estadoMaquinaGeneral = 0;
+
+      break;
   }
 }
 
 void pantalla1() {
 
   lcd.setCursor(0, 0);
-  lcd.print("Temperatura: ");
+  lcd.print("Temp: ");
   lcd.print(bmp.readTemperature());
   lcd.println(" C");
 
@@ -184,12 +220,12 @@ void pantalla1() {
 
   if (estadoCooler == 1) {
     lcd.setCursor(8, 3);
-    lcd.print("Activado");
+    lcd.print("On");
   }
 
   if (estadoCooler == 0) {
     lcd.setCursor(8, 3);
-    lcd.print("Desactivado");
+    lcd.print("Off");
   }
 
 
