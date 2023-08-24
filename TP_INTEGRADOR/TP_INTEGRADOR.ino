@@ -3,6 +3,7 @@
 #include <Adafruit_BMP280.h>
 #include <BH1750.h>
 #include <LiquidCrystal_I2C.h>
+#include <Preferences.h>
 
 
 #define PIN_BOTON_1 34
@@ -28,11 +29,13 @@
 #define BUZZER_CHANNEL 0 // Canal PWM del buzzer
 
 
-Adafruit_BMP280 bmp; // I2C
+Adafruit_BMP280 bmp;
+
 BH1750 lightMeter(0x23);
+
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-
+Preferences preferences;
 
 int estadoBoton1;
 int estadoBoton2;
@@ -52,6 +55,9 @@ int luz;
 int humedad;
 int humedadPorcentaje;
 
+int valorUmbralTemp;
+int valorUmbralHum;
+
 void setup() {
 
   Serial.begin(9600);
@@ -59,8 +65,8 @@ void setup() {
   pinMode(PIN_BOTON_1, INPUT);
   pinMode(PIN_BOTON_2, INPUT);
   pinMode(PIN_BOTON_3, INPUT_PULLUP);
-  pinMode(PIN_BOTON_4, INPUT);
-  pinMode(PIN_BOTON_5, INPUT);
+  pinMode(PIN_BOTON_4, INPUT_PULLUP);
+  pinMode(PIN_BOTON_5, INPUT_PULLUP);
   pinMode(PIN_RELE_COOLER, OUTPUT);
   pinMode(PIN_LED_ROJO, OUTPUT);
   pinMode(PIN_LED_AMARILLO, OUTPUT);
@@ -103,14 +109,21 @@ void setup() {
 
   Serial.println(F("BH1750 Test begin"));
 
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
+  preferences.begin("memoria", valorUmbralTemp);
+  preferences.begin("memoria", valorUmbralHum);
+
+
+  valorUmbralTemp = preferences.getInt("memoria", 0);
+  valorUmbralHum = preferences.getInt("memoria", 0);
 
 
   ledcSetup(BUZZER_CHANNEL, 2000, 8); // Configurar el canal PWM
   ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL); // Asociar el pin al canal PWM
   ledcWrite(BUZZER_CHANNEL, 0);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
 
   lcd.setCursor(0, 19);
   lcd.print("*");
@@ -183,15 +196,7 @@ void maquinaDeEstadosGeneral () {
 
       }
 
-      if (PIN_BOTON_ABAJO == 1) {
-
-
-        estadoMaquinaGeneral = 1;
-      }
-
-      if (PIN_BOTON_ARRIBA == 1) {
-
-
+      if (estadoBoton4 == LOW && estadoBoton5 == LOW) {
         estadoMaquinaGeneral = 1;
       }
 
@@ -199,9 +204,67 @@ void maquinaDeEstadosGeneral () {
 
     case 1:
 
-      estadoMaquinaGeneral = 0;
+      pantalla1();
+
+      if (estadoBoton4 == HIGH && estadoBoton5 == HIGH) {
+        estadoMaquinaGeneral = 2;
+      }
 
       break;
+
+    case 2:
+
+      pantalla2();
+
+      if (estadoBoton3 == LOW && estadoBoton4 == LOW) {
+        estadoMaquinaGeneral = 3;
+      }
+
+      if (estadoBoton3 == LOW && estadoBoton5 == LOW) {
+        estadoMaquinaGeneral = 4;
+      }
+
+      if (estadoBoton4 == LOW && estadoBoton5 == LOW) {
+        estadoMaquinaGeneral = 5;
+      }
+
+      break;
+
+    case 3:
+
+      pantalla2();
+
+      if (estadoBoton3 == HIGH && estadoBoton4 == HIGH) {
+        valorUmbralHum += 1;
+        estadoMaquinaGeneral = 2;
+      }
+
+      break;
+
+    case 4:
+
+      pantalla2();
+
+      if (estadoBoton3 == HIGH && estadoBoton4 == HIGH) {
+        valorUmbralTemp += 1;
+        estadoMaquinaGeneral = 2;
+      }
+
+      break;
+
+    case 5:
+
+      pantalla2();
+
+      if (estadoBoton4 == HIGH && estadoBoton5 == HIGH) {
+        preferences.putInt("memoria", valorUmbralTemp);
+        preferences.putInt("memoria", valorUmbralHum);
+
+        estadoMaquinaGeneral = 0;
+      }
+
+      break;
+
   }
 }
 
@@ -232,6 +295,20 @@ void pantalla1() {
     lcd.setCursor(8, 3);
     lcd.print("Off");
   }
+
+
+
+}
+
+void pantalla2() {
+
+  lcd.setCursor(0, 0);
+  lcd.print("Umbral Temp: ");
+  lcd.print(valorUmbralTemp);
+
+  lcd.setCursor(0, 1);
+  lcd.print("Umbral Humedad: ");
+  lcd.print(valorUmbralHum);
 
 
 
