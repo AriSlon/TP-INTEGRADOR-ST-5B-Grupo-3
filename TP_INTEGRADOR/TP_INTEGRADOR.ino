@@ -189,7 +189,6 @@ void maquinaDeEstadosGeneral () {
 
       if ((milisActuales - milisPrevios) > 1000) {
 
-        lcd.clear();
         pantalla1();
 
         milisPrevios = milisActuales;
@@ -270,6 +269,7 @@ void maquinaDeEstadosGeneral () {
 
 void pantalla1() {
 
+  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
   lcd.print(bmp.readTemperature());
@@ -301,6 +301,8 @@ void pantalla1() {
 }
 
 void pantalla2() {
+
+  lcd.clear();
 
   lcd.setCursor(0, 0);
   lcd.print("Umbral Temp: ");
