@@ -24,6 +24,9 @@
 #define PIN_LED_AMARILLO 14
 #define PIN_LED_VERDE 27
 
+#define PRESIONADO 0
+#define SUELTO 1 
+
 
 #define BUZZER_PIN 4    // Pin del buzzer
 #define BUZZER_CHANNEL 0 // Canal PWM del buzzer
@@ -125,8 +128,7 @@ void setup() {
   lcd.backlight();
   lcd.clear();
 
-  lcd.setCursor(0, 19);
-  lcd.print("*");
+  pantalla1();
 
 }
 
@@ -136,7 +138,7 @@ void loop() {
 
   milisActuales = millis();
 
-  estadoBoton1 = digitalRead(PIN_BOTON_1);
+  estadoBoton1 = !digitalRead(PIN_BOTON_1);
   estadoBoton2 = digitalRead(PIN_BOTON_2);
   estadoBoton3 = digitalRead(PIN_BOTON_3);
   estadoBoton4 = digitalRead(PIN_BOTON_4);
@@ -195,7 +197,7 @@ void maquinaDeEstadosGeneral () {
 
       }
 
-      if (estadoBoton4 == LOW && estadoBoton5 == LOW) {
+      if (estadoBoton4 == PRESIONADO && estadoBoton5 == PRESIONADO) {
         estadoMaquinaGeneral = 1;
       }
 
@@ -205,7 +207,7 @@ void maquinaDeEstadosGeneral () {
 
       pantalla1();
 
-      if (estadoBoton4 == HIGH && estadoBoton5 == HIGH) {
+      if (estadoBoton4 == SUELTO && estadoBoton5 == SUELTO) {
         estadoMaquinaGeneral = 2;
       }
 
@@ -215,15 +217,15 @@ void maquinaDeEstadosGeneral () {
 
       pantalla2();
 
-      if (estadoBoton3 == LOW && estadoBoton4 == LOW) {
+      if (estadoBoton3 == PRESIONADO && estadoBoton4 == PRESIONADO) {
         estadoMaquinaGeneral = 3;
       }
 
-      if (estadoBoton3 == LOW && estadoBoton5 == LOW) {
+      if (estadoBoton3 == PRESIONADO && estadoBoton5 == LOWPRESIONADO) {
         estadoMaquinaGeneral = 4;
       }
 
-      if (estadoBoton4 == LOW && estadoBoton5 == LOW) {
+      if (estadoBoton4 == PRESIONADO && estadoBoton5 == PRESIONADO) {
         estadoMaquinaGeneral = 5;
       }
 
@@ -233,7 +235,7 @@ void maquinaDeEstadosGeneral () {
 
       pantalla2();
 
-      if (estadoBoton3 == HIGH && estadoBoton4 == HIGH) {
+      if (estadoBoton3 == SUELTO && estadoBoton4 == SUELTO) {
         valorUmbralHum += 1;
         estadoMaquinaGeneral = 2;
       }
@@ -244,7 +246,7 @@ void maquinaDeEstadosGeneral () {
 
       pantalla2();
 
-      if (estadoBoton3 == HIGH && estadoBoton4 == HIGH) {
+      if (estadoBoton3 == SUELTO && estadoBoton4 == HIGHSUELTO) {
         valorUmbralTemp += 1;
         estadoMaquinaGeneral = 2;
       }
@@ -255,7 +257,7 @@ void maquinaDeEstadosGeneral () {
 
       pantalla2();
 
-      if (estadoBoton4 == HIGH && estadoBoton5 == HIGH) {
+      if (estadoBoton4 == SUELTO && estadoBoton5 == SUELTO) {
         preferences.putInt("memoria", valorUmbralTemp);
         preferences.putInt("memoria", valorUmbralHum);
 
