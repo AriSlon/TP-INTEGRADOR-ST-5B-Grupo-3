@@ -30,6 +30,9 @@
 #define PRESIONADO 0
 #define SUELTO 1
 
+#define ARRIBA 0
+#define ABAJO 1
+
 #define PANTALLA_1 0
 #define ESPERA_1 1
 #define PANTALLA_2 2
@@ -44,6 +47,7 @@ BH1750 lightMeter(0x23);
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 Preferences preferences;
+Preferences preferences2;
 
 int estadoBoton1;
 int estadoBoton2;
@@ -67,6 +71,8 @@ int valorUmbralTemp;
 int valorUmbralHum;
 
 int cursorPantalla;
+
+bool chequeoCursor;
 
 void setup() {
 
@@ -120,10 +126,10 @@ void setup() {
   Serial.println(F("BH1750 Test begin"));
 
   preferences.begin("memoria", valorUmbralTemp);
-  preferences.begin("memoria", valorUmbralHum);
+  preferences2.begin("memoria", valorUmbralHum);
 
 
-  valorUmbralTemp = preferences.getInt("memoria", 0);
+  valorUmbralTemp = preferences2.getInt("memoria", 0);
   valorUmbralHum = preferences.getInt("memoria", 0);
 
 
@@ -155,23 +161,26 @@ void loop() {
   estadoBoton4 = digitalRead(PIN_BOTON_4);
   estadoBoton5 = digitalRead(PIN_BOTON_5);
 
-  Serial.print("Boton 1: ");
-  Serial.println(estadoBoton1);
-  Serial.print("Boton 2: ");
-  Serial.println(estadoBoton2);
-  Serial.print("Boton 3: ");
-  Serial.println(estadoBoton3);
-  Serial.print("Boton 4: ");
-  Serial.println(estadoBoton4);
-  Serial.print("Boton 5: ");
-  Serial.println(estadoBoton5);
+  /*Serial.print("Boton 1: ");
+    Serial.println(estadoBoton1);
+    Serial.print("Boton 2: ");
+    Serial.println(estadoBoton2);
+    Serial.print("Boton 3: ");
+    Serial.println(estadoBoton3);
+    Serial.print("Boton 4: ");
+    Serial.println(estadoBoton4);
+    Serial.print("Boton 5: ");
+    Serial.println(estadoBoton5);
+  */
+
+  Serial.println(cursorPantalla);
 
   digitalWrite(PIN_LED_VERDE, HIGH);
   digitalWrite(PIN_LED_AMARILLO, HIGH);
   digitalWrite(PIN_LED_ROJO, HIGH);
 
   humedad = analogRead(PIN_SENSOR_HUMEDAD);
-  humedadPorcentaje = map(humedad, 0, 2950, 100, 0);
+  humedadPorcentaje = map(humedad, 0, 2950, 0, 100);
 
   luz = lightMeter.readLightLevel();
 
@@ -185,6 +194,14 @@ void loop() {
   if (PIN_RELE_COOLER == LOW) {
 
     estadoCooler = 0;
+  }
+
+  if (cursorPantalla < 0) {
+    cursorPantalla = 0;
+  }
+
+  if (cursorPantalla > 3) {
+    cursorPantalla = 3;
   }
 
   maquinaDeEstadosGeneral();
@@ -202,53 +219,60 @@ void maquinaDeEstadosGeneral () {
         lcd.setCursor(19, 0);
         lcd.print("*");
         lcd.setCursor(19, 1);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 2);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 3);
-        lcd.print("");
+        lcd.print(" ");
 
       }
 
       if (cursorPantalla == 1) {
         lcd.setCursor(19, 0);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 1);
         lcd.print("*");
         lcd.setCursor(19, 2);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 3);
-        lcd.print("");
+        lcd.print(" ");
 
       }
 
       if (cursorPantalla == 2) {
         lcd.setCursor(19, 0);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 1);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 2);
         lcd.print("*");
         lcd.setCursor(19, 3);
-        lcd.print("");
+        lcd.print(" ");
 
       }
 
       if (cursorPantalla == 3) {
         lcd.setCursor(19, 0);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 1);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 2);
-        lcd.print("");
+        lcd.print(" ");
         lcd.setCursor(19, 3);
         lcd.print("*");
 
       }
 
-      if(estadoBoton1 == APRETADO){
-        
+      if (estadoBoton1 == PRESIONADO) {
+        chequeoCursor = ABAJO;
+        estadoMaquinaGeneral = 6;
       }
+
+      if (estadoBoton2 == PRESIONADO) {
+        chequeoCursor = ARRIBA;
+        estadoMaquinaGeneral = 6;
+      }
+
 
 
       if ((milisActuales - milisPrevios) > 1000) {
@@ -277,7 +301,7 @@ void maquinaDeEstadosGeneral () {
 
       break;
 
-    case 3:
+    case 2:
 
       pantalla2();
 
@@ -322,8 +346,8 @@ void maquinaDeEstadosGeneral () {
       pantalla2();
 
       if (estadoBoton4 == SUELTO && estadoBoton5 == SUELTO) {
-        preferences.putInt("memoria", valorUmbralTemp);
-        preferences.putInt("memoria", valorUmbralHum);
+        preferences2.putInt("memoria", valorUmbralTemp);
+        preferences2.putInt("memoria", valorUmbralHum);
 
         lcd.clear();
         estadoMaquinaGeneral = 0;
@@ -335,12 +359,12 @@ void maquinaDeEstadosGeneral () {
 
       pantalla1();
 
-      if (estadoBoton1 == SUELTO ) {
+      if (estadoBoton1 == SUELTO && chequeoCursor == ABAJO ) {
         cursorPantalla += 1;
         estadoMaquinaGeneral = 0;
       }
 
-      if (estadoBoton2 == SUELTO ) {
+      if (estadoBoton2 == SUELTO && chequeoCursor == ARRIBA ) {
         cursorPantalla -= 1;
         estadoMaquinaGeneral = 0;
       }
