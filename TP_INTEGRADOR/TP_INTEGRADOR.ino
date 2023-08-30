@@ -24,12 +24,17 @@
 #define PIN_LED_AMARILLO 14
 #define PIN_LED_VERDE 27
 
-#define PRESIONADO 0
-#define SUELTO 1 
-
-
 #define BUZZER_PIN 4    // Pin del buzzer
 #define BUZZER_CHANNEL 0 // Canal PWM del buzzer
+
+#define PRESIONADO 0
+#define SUELTO 1
+
+#define PANTALLA_1 0
+#define ESPERA_1 1
+#define PANTALLA_2 2
+#define ESPERA_2 3
+
 
 
 Adafruit_BMP280 bmp;
@@ -60,6 +65,8 @@ int humedadPorcentaje;
 
 int valorUmbralTemp;
 int valorUmbralHum;
+
+int cursorPantalla;
 
 void setup() {
 
@@ -126,9 +133,13 @@ void setup() {
 
   lcd.init();
   lcd.backlight();
+
   lcd.clear();
 
   pantalla1();
+
+  lcd.setCursor(0, 19);
+  lcd.print("*");
 
 }
 
@@ -187,6 +198,57 @@ void maquinaDeEstadosGeneral () {
 
     case 0:
 
+      if (cursorPantalla == 0) {
+        lcd.setCursor(19, 0);
+        lcd.print("*");
+        lcd.setCursor(19, 1);
+        lcd.print("");
+        lcd.setCursor(19, 2);
+        lcd.print("");
+        lcd.setCursor(19, 3);
+        lcd.print("");
+
+      }
+
+      if (cursorPantalla == 1) {
+        lcd.setCursor(19, 0);
+        lcd.print("");
+        lcd.setCursor(19, 1);
+        lcd.print("*");
+        lcd.setCursor(19, 2);
+        lcd.print("");
+        lcd.setCursor(19, 3);
+        lcd.print("");
+
+      }
+
+      if (cursorPantalla == 2) {
+        lcd.setCursor(19, 0);
+        lcd.print("");
+        lcd.setCursor(19, 1);
+        lcd.print("");
+        lcd.setCursor(19, 2);
+        lcd.print("*");
+        lcd.setCursor(19, 3);
+        lcd.print("");
+
+      }
+
+      if (cursorPantalla == 3) {
+        lcd.setCursor(19, 0);
+        lcd.print("");
+        lcd.setCursor(19, 1);
+        lcd.print("");
+        lcd.setCursor(19, 2);
+        lcd.print("");
+        lcd.setCursor(19, 3);
+        lcd.print("*");
+
+      }
+
+      if(estadoBoton1 == APRETADO){
+        
+      }
 
 
       if ((milisActuales - milisPrevios) > 1000) {
@@ -209,11 +271,13 @@ void maquinaDeEstadosGeneral () {
 
       if (estadoBoton4 == SUELTO && estadoBoton5 == SUELTO) {
         estadoMaquinaGeneral = 2;
+        lcd.clear();
       }
+
 
       break;
 
-    case 2:
+    case 3:
 
       pantalla2();
 
@@ -221,7 +285,7 @@ void maquinaDeEstadosGeneral () {
         estadoMaquinaGeneral = 3;
       }
 
-      if (estadoBoton3 == PRESIONADO && estadoBoton5 == LOWPRESIONADO) {
+      if (estadoBoton3 == PRESIONADO && estadoBoton5 == PRESIONADO) {
         estadoMaquinaGeneral = 4;
       }
 
@@ -246,7 +310,7 @@ void maquinaDeEstadosGeneral () {
 
       pantalla2();
 
-      if (estadoBoton3 == SUELTO && estadoBoton4 == HIGHSUELTO) {
+      if (estadoBoton3 == SUELTO && estadoBoton4 == SUELTO) {
         valorUmbralTemp += 1;
         estadoMaquinaGeneral = 2;
       }
@@ -261,6 +325,23 @@ void maquinaDeEstadosGeneral () {
         preferences.putInt("memoria", valorUmbralTemp);
         preferences.putInt("memoria", valorUmbralHum);
 
+        lcd.clear();
+        estadoMaquinaGeneral = 0;
+      }
+
+      break;
+
+    case 6:
+
+      pantalla1();
+
+      if (estadoBoton1 == SUELTO ) {
+        cursorPantalla += 1;
+        estadoMaquinaGeneral = 0;
+      }
+
+      if (estadoBoton2 == SUELTO ) {
+        cursorPantalla -= 1;
         estadoMaquinaGeneral = 0;
       }
 
@@ -271,7 +352,6 @@ void maquinaDeEstadosGeneral () {
 
 void pantalla1() {
 
-  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
   lcd.print(bmp.readTemperature());
@@ -303,8 +383,6 @@ void pantalla1() {
 }
 
 void pantalla2() {
-
-  lcd.clear();
 
   lcd.setCursor(0, 0);
   lcd.print("Umbral Temp: ");
