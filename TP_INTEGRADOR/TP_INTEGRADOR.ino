@@ -33,10 +33,24 @@
 #define ARRIBA 0
 #define ABAJO 1
 
+#define TEMPERATURA 0
+#define HUMEDAD 1
+
 #define PANTALLA_GENERAL 0
-#define ESPERA_1 1
-#define PANTALLA_2 2
-#define ESPERA_2 3
+#define ESPERA_GENERAL_UMBRALTEMP 1
+#define PANTALLA_UMBRAL_TEMPERATURA 2
+#define SUMA_UMBRAL_TEMPERATURA 3
+#define RESTA_UMBRAL_TEMPERATURA 4
+#define ESPERA_GENERAL_UMBRALHUM 5
+#define PANTALLA_UMBRAL_HUMEDAD 6
+#define SUMA_UMBRAL_HUMEDAD 7
+#define RESTA_UMBRAL_HUMEDAD 8
+#define ESPERA_VUELTA_GENERAL 9
+#define MOVIMIENTOS_CURSOR 10
+#define ESPERA_2 7
+#define ESPERA_2 8
+#define ESPERA_2 9
+#define ESPERA_2 10
 
 
 
@@ -74,6 +88,7 @@ int valorUmbralHum;
 int cursorPantalla;
 
 bool chequeoCursor;
+bool chequeoPantallaUmbral;
 
 void setup() {
 
@@ -214,25 +229,27 @@ void maquinaDeEstadosGeneral () {
 
   switch (estadoMaquinaGeneral) {
 
-    case 0:
+    case PANTALLA_GENERAL:
 
       movimientosCursor();
 
       if (estadoBotonAbajo == PRESIONADO) {
         chequeoCursor = ABAJO;
-        estadoMaquinaGeneral = 6;
+        estadoMaquinaGeneral = MOVIMIENTOS_CURSOR;
       }
 
       if (estadoBotonArriba == PRESIONADO) {
         chequeoCursor = ARRIBA;
-        estadoMaquinaGeneral = 6;
+        estadoMaquinaGeneral = MOVIMIENTOS_CURSOR;
       }
 
       if (cursorPantalla == 0 && estadoBotonEnter == PRESIONADO) {
-        estadoMaquinaGeneral = 1;
+        estadoMaquinaGeneral = ESPERA_GENERAL_UMBRALTEMP;
       }
 
-
+      if (cursorPantalla == 1 && estadoBotonEnter == PRESIONADO) {
+        estadoMaquinaGeneral = ESPERA_GENERAL_UMBRALHUM;
+      }
 
       if ((milisActuales - milisPrevios) > 1000) {
 
@@ -245,84 +262,143 @@ void maquinaDeEstadosGeneral () {
 
       break;
 
-    case 1:
+    case ESPERA_GENERAL_UMBRALTEMP:
 
       pantallaMenuGeneral();
 
       if (estadoBotonEnter == SUELTO) {
-        estadoMaquinaGeneral = 2;
         lcd.clear();
+        estadoMaquinaGeneral = PANTALLA_UMBRAL_TEMPERATURA;
       }
 
 
       break;
 
-    case 2:
+    case PANTALLA_UMBRAL_TEMPERATURA:
 
       pantallaUmbralTemp();
-      
+
       if (estadoBotonDerecha == PRESIONADO) {
-        estadoMaquinaGeneral = 3;
+        estadoMaquinaGeneral = SUMA_UMBRAL_TEMPERATURA;
       }
 
       if (estadoBotonIzquierda == PRESIONADO) {
-        estadoMaquinaGeneral = 4;
+        estadoMaquinaGeneral = RESTA_UMBRAL_TEMPERATURA;
       }
 
-      if (estadoBotonAbajo == PRESIONADO && estadoBotonEnter == PRESIONADO) {
-        estadoMaquinaGeneral = 5;
+      if (estadoBotonAbajo == PRESIONADO && estadoBotonArriba == PRESIONADO) {
+        chequeoPantallaUmbral = TEMPERATURA;
+        estadoMaquinaGeneral = ESPERA_VUELTA_GENERAL;
       }
 
       break;
 
-    case 3:
+    case SUMA_UMBRAL_TEMPERATURA:
 
       pantallaUmbralTemp();
 
       if (estadoBotonDerecha == SUELTO ) {
         valorUmbralTemp += 1;
-        estadoMaquinaGeneral = 2;
+        estadoMaquinaGeneral = PANTALLA_UMBRAL_TEMPERATURA;
       }
 
       break;
 
-    case 4:
+    case RESTA_UMBRAL_TEMPERATURA:
 
       pantallaUmbralTemp();
 
       if (estadoBotonIzquierda == SUELTO ) {
         valorUmbralTemp -= 1;
-        estadoMaquinaGeneral = 2;
+        estadoMaquinaGeneral = PANTALLA_UMBRAL_TEMPERATURA;
       }
 
       break;
 
-    case 5:
+    case ESPERA_GENERAL_UMBRALHUM:
 
-      pantalla2();
+      pantallaMenuGeneral();
+
+      if (estadoBotonEnter == SUELTO) {
+        lcd.clear();
+        estadoMaquinaGeneral = PANTALLA_UMBRAL_HUMEDAD;
+      }
+
+
+      break;
+
+    case PANTALLA_UMBRAL_HUMEDAD:
+
+      pantallaUmbralHum();
+
+      if (estadoBotonDerecha == PRESIONADO) {
+        estadoMaquinaGeneral = SUMA_UMBRAL_HUMEDAD;
+      }
+
+      if (estadoBotonIzquierda == PRESIONADO) {
+        estadoMaquinaGeneral = RESTA_UMBRAL_HUMEDAD;
+      }
+
+      if (estadoBotonAbajo == PRESIONADO && estadoBotonArriba == PRESIONADO) {
+        chequeoPantallaUmbral = HUMEDAD;
+        estadoMaquinaGeneral = ESPERA_VUELTA_GENERAL;
+      }
+
+      break;
+
+    case SUMA_UMBRAL_HUMEDAD:
+
+      pantallaUmbralHum();
+
+      if (estadoBotonDerecha == SUELTO ) {
+        valorUmbralHum += 1;
+        estadoMaquinaGeneral = PANTALLA_UMBRAL_HUMEDAD;
+      }
+
+      break;
+
+    case RESTA_UMBRAL_HUMEDAD:
+
+      pantallaUmbralHum();
+
+      if (estadoBotonIzquierda == SUELTO ) {
+        valorUmbralHum -= 1;
+        estadoMaquinaGeneral = PANTALLA_UMBRAL_HUMEDAD;
+      }
+
+      break;
+
+    case ESPERA_VUELTA_GENERAL:
+
+      if (chequeoPantallaUmbral == TEMPERATURA) {
+        pantallaUmbralTemp();
+      }
+
+      if (chequeoPantallaUmbral == HUMEDAD) {
+        pantallaUmbralHum();
+      }
 
       if (estadoBotonAbajo == SUELTO && estadoBotonEnter == SUELTO) {
         preferencesTemp.putInt("memoria", valorUmbralTemp);
         preferencesHum.putInt("memoria2", valorUmbralHum);
-
         lcd.clear();
-        estadoMaquinaGeneral = 0;
+        estadoMaquinaGeneral = PANTALLA_GENERAL;
       }
 
       break;
 
-    case 6:
+    case MOVIMIENTOS_CURSOR:
 
       pantallaMenuGeneral();
 
       if (estadoBotonAbajo == SUELTO && chequeoCursor == ABAJO ) {
         cursorPantalla += 1;
-        estadoMaquinaGeneral = 0;
+        estadoMaquinaGeneral = PANTALLA_GENERAL;
       }
 
       if (estadoBotonArriba == SUELTO && chequeoCursor == ARRIBA ) {
         cursorPantalla -= 1;
-        estadoMaquinaGeneral = 0;
+        estadoMaquinaGeneral = PANTALLA_GENERAL;
       }
 
       break;
@@ -432,7 +508,7 @@ void movimientosCursor() {
   }
 
 }
-}
+
 /*
 
   void loop() {
@@ -506,7 +582,7 @@ void movimientosCursor() {
 
   void loop() {
 
-  Serial.print(digitalRead(13));
+  Serial.print(digitalRead(4));
   ledcWrite(BUZZER_CHANNEL, 128);
 
   delay(2000);
@@ -555,6 +631,42 @@ void movimientosCursor() {
   digitalWrite(PIN_LED_VERDE, HIGH);
   digitalWrite(PIN_LED_AMARILLO, HIGH);
   digitalWrite(PIN_LED_ROJO, HIGH);
+
+  }
+
+  void buzzerTercerUmbral() {
+
+  milisActualesBuzzerTercerUmbral = millis();
+
+  switch (estadoMaquinaBuzzerTercerUmbral) {
+
+    case 0:
+
+      ledcWrite(BUZZER_CHANNEL, 128);
+
+      if ((milisActualesBuzzerTercerUmbral - milisPreviosBuzzerTercerUmbral) > 150) {
+
+        milisPreviosBuzzerTercerUmbral = milisActualesBuzzerTercerUmbral;
+        estadoMaquinaBuzzerTercerUmbral = 1;
+
+      }
+
+      break;
+
+    case 1:
+
+      ledcWrite(BUZZER_CHANNEL, 0);
+
+      if ((milisActualesBuzzerTercerUmbral - milisPreviosBuzzerTercerUmbral) > 150) {
+
+        milisPreviosBuzzerTercerUmbral = milisActualesBuzzerTercerUmbral;
+        estadoMaquinaBuzzerTercerUmbral = 0;
+
+      }
+
+      break;
+
+  }
 
   }
 */
