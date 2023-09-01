@@ -12,8 +12,8 @@
 #define PIN_BOTON_4 33
 #define PIN_BOTON_5 25
 
-#define PIN_BOTON_DERECHA 34
-#define PIN_BOTON_IZQUIERDA 35
+#define PIN_BOTON_IZQUIERDA 34
+#define PIN_BOTON_DERECHA 35
 #define PIN_BOTON_ARRIBA 32
 #define PIN_BOTON_ABAJO 33
 #define PIN_BOTON_ENTER 25
@@ -33,7 +33,7 @@
 #define ARRIBA 0
 #define ABAJO 1
 
-#define PANTALLA_1 0
+#define PANTALLA_GENERAL 0
 #define ESPERA_1 1
 #define PANTALLA_2 2
 #define ESPERA_2 3
@@ -46,14 +46,15 @@ BH1750 lightMeter(0x23);
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
-Preferences preferences;
-Preferences preferences2;
+Preferences preferencesTemp;
+Preferences preferencesHum;
 
-int estadoBoton1;
-int estadoBoton2;
-int estadoBoton3;
-int estadoBoton4;
-int estadoBoton5;
+int estadoBotonIzquierda;
+int estadoBotonDerecha;
+int estadoBotonArriba;
+int estadoBotonAbajo;
+int estadoBotonEnter;
+
 int estadoMaquinaGeneral;
 
 unsigned long milisActuales;
@@ -125,12 +126,12 @@ void setup() {
 
   Serial.println(F("BH1750 Test begin"));
 
-  preferences.begin("memoria", valorUmbralTemp);
-  preferences2.begin("memoria", valorUmbralHum);
+  preferencesTemp.begin("memoria", valorUmbralTemp);
+  preferencesHum.begin("memoria2", valorUmbralHum);
 
 
-  valorUmbralTemp = preferences2.getInt("memoria", 0);
-  valorUmbralHum = preferences.getInt("memoria", 0);
+  valorUmbralTemp = preferencesTemp.getInt("memoria", 0);
+  valorUmbralHum = preferencesHum.getInt("memoria2", 0);
 
 
   ledcSetup(BUZZER_CHANNEL, 2000, 8); // Configurar el canal PWM
@@ -142,7 +143,7 @@ void setup() {
 
   lcd.clear();
 
-  pantalla1();
+  pantallaMenuGeneral();
 
   lcd.setCursor(0, 19);
   lcd.print("*");
@@ -155,22 +156,22 @@ void loop() {
 
   milisActuales = millis();
 
-  estadoBoton1 = !digitalRead(PIN_BOTON_1);
-  estadoBoton2 = digitalRead(PIN_BOTON_2);
-  estadoBoton3 = digitalRead(PIN_BOTON_3);
-  estadoBoton4 = digitalRead(PIN_BOTON_4);
-  estadoBoton5 = digitalRead(PIN_BOTON_5);
+  estadoBotonIzquierda = !digitalRead(PIN_BOTON_1);
+  estadoBotonDerecha = digitalRead(PIN_BOTON_2);
+  estadoBotonArriba = digitalRead(PIN_BOTON_3);
+  estadoBotonAbajo = digitalRead(PIN_BOTON_4);
+  estadoBotonEnter = digitalRead(PIN_BOTON_5);
 
   /*Serial.print("Boton 1: ");
-    Serial.println(estadoBoton1);
+    Serial.println(estadoBotonIzquierda);
     Serial.print("Boton 2: ");
-    Serial.println(estadoBoton2);
+    Serial.println(estadoBotonDerecha);
     Serial.print("Boton 3: ");
-    Serial.println(estadoBoton3);
+    Serial.println(estadoBotonArriba);
     Serial.print("Boton 4: ");
-    Serial.println(estadoBoton4);
+    Serial.println(estadoBotonAbajo);
     Serial.print("Boton 5: ");
-    Serial.println(estadoBoton5);
+    Serial.println(estadoBotonEnter);
   */
 
   Serial.println(cursorPantalla);
@@ -215,85 +216,40 @@ void maquinaDeEstadosGeneral () {
 
     case 0:
 
-      if (cursorPantalla == 0) {
-        lcd.setCursor(19, 0);
-        lcd.print("*");
-        lcd.setCursor(19, 1);
-        lcd.print(" ");
-        lcd.setCursor(19, 2);
-        lcd.print(" ");
-        lcd.setCursor(19, 3);
-        lcd.print(" ");
+      movimientosCursor();
 
-      }
-
-      if (cursorPantalla == 1) {
-        lcd.setCursor(19, 0);
-        lcd.print(" ");
-        lcd.setCursor(19, 1);
-        lcd.print("*");
-        lcd.setCursor(19, 2);
-        lcd.print(" ");
-        lcd.setCursor(19, 3);
-        lcd.print(" ");
-
-      }
-
-      if (cursorPantalla == 2) {
-        lcd.setCursor(19, 0);
-        lcd.print(" ");
-        lcd.setCursor(19, 1);
-        lcd.print(" ");
-        lcd.setCursor(19, 2);
-        lcd.print("*");
-        lcd.setCursor(19, 3);
-        lcd.print(" ");
-
-      }
-
-      if (cursorPantalla == 3) {
-        lcd.setCursor(19, 0);
-        lcd.print(" ");
-        lcd.setCursor(19, 1);
-        lcd.print(" ");
-        lcd.setCursor(19, 2);
-        lcd.print(" ");
-        lcd.setCursor(19, 3);
-        lcd.print("*");
-
-      }
-
-      if (estadoBoton1 == PRESIONADO) {
+      if (estadoBotonAbajo == PRESIONADO) {
         chequeoCursor = ABAJO;
         estadoMaquinaGeneral = 6;
       }
 
-      if (estadoBoton2 == PRESIONADO) {
+      if (estadoBotonArriba == PRESIONADO) {
         chequeoCursor = ARRIBA;
         estadoMaquinaGeneral = 6;
+      }
+
+      if (cursorPantalla == 0 && estadoBotonEnter == PRESIONADO) {
+        estadoMaquinaGeneral = 1;
       }
 
 
 
       if ((milisActuales - milisPrevios) > 1000) {
 
-        pantalla1();
+        pantallaMenuGeneral();
 
         milisPrevios = milisActuales;
 
       }
 
-      if (estadoBoton4 == PRESIONADO && estadoBoton5 == PRESIONADO) {
-        estadoMaquinaGeneral = 1;
-      }
 
       break;
 
     case 1:
 
-      pantalla1();
+      pantallaMenuGeneral();
 
-      if (estadoBoton4 == SUELTO && estadoBoton5 == SUELTO) {
+      if (estadoBotonEnter == SUELTO) {
         estadoMaquinaGeneral = 2;
         lcd.clear();
       }
@@ -303,17 +259,17 @@ void maquinaDeEstadosGeneral () {
 
     case 2:
 
-      pantalla2();
-
-      if (estadoBoton3 == PRESIONADO && estadoBoton4 == PRESIONADO) {
+      pantallaUmbralTemp();
+      
+      if (estadoBotonDerecha == PRESIONADO) {
         estadoMaquinaGeneral = 3;
       }
 
-      if (estadoBoton3 == PRESIONADO && estadoBoton5 == PRESIONADO) {
+      if (estadoBotonIzquierda == PRESIONADO) {
         estadoMaquinaGeneral = 4;
       }
 
-      if (estadoBoton4 == PRESIONADO && estadoBoton5 == PRESIONADO) {
+      if (estadoBotonAbajo == PRESIONADO && estadoBotonEnter == PRESIONADO) {
         estadoMaquinaGeneral = 5;
       }
 
@@ -321,10 +277,10 @@ void maquinaDeEstadosGeneral () {
 
     case 3:
 
-      pantalla2();
+      pantallaUmbralTemp();
 
-      if (estadoBoton3 == SUELTO && estadoBoton4 == SUELTO) {
-        valorUmbralHum += 1;
+      if (estadoBotonDerecha == SUELTO ) {
+        valorUmbralTemp += 1;
         estadoMaquinaGeneral = 2;
       }
 
@@ -332,10 +288,10 @@ void maquinaDeEstadosGeneral () {
 
     case 4:
 
-      pantalla2();
+      pantallaUmbralTemp();
 
-      if (estadoBoton3 == SUELTO && estadoBoton4 == SUELTO) {
-        valorUmbralTemp += 1;
+      if (estadoBotonIzquierda == SUELTO ) {
+        valorUmbralTemp -= 1;
         estadoMaquinaGeneral = 2;
       }
 
@@ -345,9 +301,9 @@ void maquinaDeEstadosGeneral () {
 
       pantalla2();
 
-      if (estadoBoton4 == SUELTO && estadoBoton5 == SUELTO) {
-        preferences2.putInt("memoria", valorUmbralTemp);
-        preferences2.putInt("memoria", valorUmbralHum);
+      if (estadoBotonAbajo == SUELTO && estadoBotonEnter == SUELTO) {
+        preferencesTemp.putInt("memoria", valorUmbralTemp);
+        preferencesHum.putInt("memoria2", valorUmbralHum);
 
         lcd.clear();
         estadoMaquinaGeneral = 0;
@@ -357,14 +313,14 @@ void maquinaDeEstadosGeneral () {
 
     case 6:
 
-      pantalla1();
+      pantallaMenuGeneral();
 
-      if (estadoBoton1 == SUELTO && chequeoCursor == ABAJO ) {
+      if (estadoBotonAbajo == SUELTO && chequeoCursor == ABAJO ) {
         cursorPantalla += 1;
         estadoMaquinaGeneral = 0;
       }
 
-      if (estadoBoton2 == SUELTO && chequeoCursor == ARRIBA ) {
+      if (estadoBotonArriba == SUELTO && chequeoCursor == ARRIBA ) {
         cursorPantalla -= 1;
         estadoMaquinaGeneral = 0;
       }
@@ -374,7 +330,7 @@ void maquinaDeEstadosGeneral () {
   }
 }
 
-void pantalla1() {
+void pantallaMenuGeneral() {
 
   lcd.setCursor(0, 0);
   lcd.print("Temp: ");
@@ -406,20 +362,77 @@ void pantalla1() {
 
 }
 
-void pantalla2() {
+
+void pantallaUmbralTemp() {
 
   lcd.setCursor(0, 0);
   lcd.print("Umbral Temp: ");
   lcd.print(valorUmbralTemp);
 
-  lcd.setCursor(0, 1);
-  lcd.print("Umbral Humedad: ");
+}
+
+
+void pantallaUmbralHum() {
+
+  lcd.setCursor(0, 0);
+  lcd.print("Umbral Hum: ");
   lcd.print(valorUmbralHum);
-
-
 
 }
 
+
+void movimientosCursor() {
+
+  if (cursorPantalla == 0) {
+    lcd.setCursor(19, 0);
+    lcd.print("*");
+    lcd.setCursor(19, 1);
+    lcd.print(" ");
+    lcd.setCursor(19, 2);
+    lcd.print(" ");
+    lcd.setCursor(19, 3);
+    lcd.print(" ");
+
+  }
+
+  if (cursorPantalla == 1) {
+    lcd.setCursor(19, 0);
+    lcd.print(" ");
+    lcd.setCursor(19, 1);
+    lcd.print("*");
+    lcd.setCursor(19, 2);
+    lcd.print(" ");
+    lcd.setCursor(19, 3);
+    lcd.print(" ");
+
+  }
+
+  if (cursorPantalla == 2) {
+    lcd.setCursor(19, 0);
+    lcd.print(" ");
+    lcd.setCursor(19, 1);
+    lcd.print(" ");
+    lcd.setCursor(19, 2);
+    lcd.print("*");
+    lcd.setCursor(19, 3);
+    lcd.print(" ");
+
+  }
+
+  if (cursorPantalla == 3) {
+    lcd.setCursor(19, 0);
+    lcd.print(" ");
+    lcd.setCursor(19, 1);
+    lcd.print(" ");
+    lcd.setCursor(19, 2);
+    lcd.print(" ");
+    lcd.setCursor(19, 3);
+    lcd.print("*");
+
+  }
+
+}
+}
 /*
 
   void loop() {
