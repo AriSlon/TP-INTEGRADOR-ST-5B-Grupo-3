@@ -4,6 +4,10 @@
 #include <BH1750.h>
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
+//#include <WiFi.h>
+//#include <WiFiClientSecure.h>
+//#include <UniversalTelegramBot.h>
+//#include <ArduinoJson.h>
 
 
 #define PIN_BOTON_1 34
@@ -52,7 +56,8 @@
 #define ESPERA_2 9
 #define ESPERA_2 10
 
-
+//#define BOTtoken "6582349263:AAHnC5r8S53ASk3J4RTncCs0LZy2-jA65pY"
+//#define CHAT_ID "5939693005"
 
 Adafruit_BMP280 bmp;
 
@@ -62,6 +67,20 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 Preferences preferencesTemp;
 Preferences preferencesHum;
+
+//WiFiClientSecure client;
+//UniversalTelegramBot bot(BOTtoken, client);
+
+const char* ssid = "ari";
+const char* password = "004367225aa";
+
+//const char* ssid = "ORT-IoT";
+//const char* password = "OrtIOTnew22$2";
+
+String mensaje = "La temperatura actual es: ";
+
+int botRequestDelay = 1000; /// intervalo
+unsigned long lastTimeBotRan; /// ultimo tiempo
 
 int estadoBotonIzquierda;
 int estadoBotonDerecha;
@@ -135,6 +154,22 @@ void setup() {
 
   //*/
 
+  /*
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+
+
+
+      while (WiFi.status() != WL_CONNECTED) {
+      delay(1000);
+      Serial.println("Connecting to WiFi..");
+      }
+
+      Serial.println(WiFi.localIP());
+      bot.sendMessage(CHAT_ID, "Conexion establecida entre el Bot y el microcontrolador", "");
+
+  */
   Wire.begin();
 
   lightMeter.begin();
@@ -158,7 +193,7 @@ void setup() {
 
   lcd.clear();
 
-  pantallaMenuGeneral();
+pantallaMenuGeneralSetUp();
 
   lcd.setCursor(0, 19);
   lcd.print("*");
@@ -177,17 +212,17 @@ void loop() {
   estadoBotonAbajo = digitalRead(PIN_BOTON_4);
   estadoBotonEnter = digitalRead(PIN_BOTON_5);
 
-  /*Serial.print("Boton 1: ");
-    Serial.println(estadoBotonIzquierda);
-    Serial.print("Boton 2: ");
-    Serial.println(estadoBotonDerecha);
-    Serial.print("Boton 3: ");
-    Serial.println(estadoBotonArriba);
-    Serial.print("Boton 4: ");
-    Serial.println(estadoBotonAbajo);
-    Serial.print("Boton 5: ");
-    Serial.println(estadoBotonEnter);
-  */
+  Serial.print("Boton 1: ");
+  Serial.println(estadoBotonIzquierda);
+  Serial.print("Boton 2: ");
+  Serial.println(estadoBotonDerecha);
+  Serial.print("Boton 3: ");
+  Serial.println(estadoBotonArriba);
+  Serial.print("Boton 4: ");
+  Serial.println(estadoBotonAbajo);
+  Serial.print("Boton 5: ");
+  Serial.println(estadoBotonEnter);
+
 
   Serial.println(cursorPantalla);
 
@@ -221,6 +256,10 @@ void loop() {
   }
 
   maquinaDeEstadosGeneral();
+  movimientosCursor();
+
+  //lecturaTiempoBot();
+
 
 }
 
@@ -230,8 +269,6 @@ void maquinaDeEstadosGeneral () {
   switch (estadoMaquinaGeneral) {
 
     case PANTALLA_GENERAL:
-
-      movimientosCursor();
 
       if (estadoBotonAbajo == PRESIONADO) {
         chequeoCursor = ABAJO;
@@ -251,13 +288,8 @@ void maquinaDeEstadosGeneral () {
         estadoMaquinaGeneral = ESPERA_GENERAL_UMBRALHUM;
       }
 
-      if ((milisActuales - milisPrevios) > 1000) {
+      pantallaMenuGeneral();
 
-        pantallaMenuGeneral();
-
-        milisPrevios = milisActuales;
-
-      }
 
 
       break;
@@ -389,8 +421,6 @@ void maquinaDeEstadosGeneral () {
 
     case MOVIMIENTOS_CURSOR:
 
-      pantallaMenuGeneral();
-
       if (estadoBotonAbajo == SUELTO && chequeoCursor == ABAJO ) {
         cursorPantalla += 1;
         estadoMaquinaGeneral = PANTALLA_GENERAL;
@@ -408,30 +438,58 @@ void maquinaDeEstadosGeneral () {
 
 void pantallaMenuGeneral() {
 
-  lcd.setCursor(0, 0);
-  lcd.print("Temp: ");
-  lcd.print(bmp.readTemperature());
 
-  lcd.setCursor(0, 1);
-  lcd.print("Humedad: ");
-  lcd.print(humedadPorcentaje);
+  if ((milisActuales - milisPrevios) > 10000) {
 
-  lcd.setCursor(0, 2);
-  lcd.print("Luz: ");
-  lcd.print(luzPorcentaje);
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(bmp.readTemperature());
+
+    lcd.setCursor(0, 1);
+    lcd.print("Humedad: ");
+    lcd.print(humedadPorcentaje);
+
+    lcd.setCursor(0, 2);
+    lcd.print("Luz: ");
+    lcd.print(luzPorcentaje);
 
 
-  lcd.setCursor(0, 3);
-  lcd.print("Cooler: ");
+    lcd.setCursor(0, 3);
+    lcd.print("Cooler: ");
 
-  if (estadoCooler == 1) {
-    lcd.setCursor(8, 3);
-    lcd.print("On");
+    if (estadoCooler == 1) {
+      lcd.setCursor(8, 3);
+      lcd.print("On");
+    }
+
+    if (estadoCooler == 0) {
+      lcd.setCursor(8, 3);
+      lcd.print("Off");
+    }
+
+    milisPrevios = milisActuales;
+
   }
 
-  if (estadoCooler == 0) {
-    lcd.setCursor(8, 3);
-    lcd.print("Off");
+  if (luzPorcentaje < 10) {
+    lcd.setCursor(6, 2);
+    lcd.print(" ");
+  }
+
+  if (luzPorcentaje < 100) {
+    lcd.setCursor(7, 2);
+    lcd.print(" ");
+  }
+
+
+  if (humedadPorcentaje < 10) {
+    lcd.setCursor(10, 1);
+    lcd.print(" ");
+  }
+
+  if (humedadPorcentaje < 100) {
+    lcd.setCursor(11, 1);
+    lcd.print(" ");
   }
 
 
@@ -459,43 +517,60 @@ void pantallaUmbralHum() {
 
 void movimientosCursor() {
 
-  if (cursorPantalla == 0) {
-    lcd.setCursor(19, 0);
-    lcd.print("*");
-    lcd.setCursor(19, 1);
-    lcd.print(" ");
-    lcd.setCursor(19, 2);
-    lcd.print(" ");
-    lcd.setCursor(19, 3);
-    lcd.print(" ");
+  if (estadoMaquinaGeneral == PANTALLA_GENERAL || estadoMaquinaGeneral == MOVIMIENTOS_CURSOR) {
+
+    if (cursorPantalla == 0) {
+      lcd.setCursor(19, 0);
+      lcd.print("*");
+      lcd.setCursor(19, 1);
+      lcd.print(" ");
+      lcd.setCursor(19, 2);
+      lcd.print(" ");
+      lcd.setCursor(19, 3);
+      lcd.print(" ");
+
+    }
+
+    if (cursorPantalla == 1) {
+      lcd.setCursor(19, 0);
+      lcd.print(" ");
+      lcd.setCursor(19, 1);
+      lcd.print("*");
+      lcd.setCursor(19, 2);
+      lcd.print(" ");
+      lcd.setCursor(19, 3);
+      lcd.print(" ");
+
+    }
+
+    if (cursorPantalla == 2) {
+      lcd.setCursor(19, 0);
+      lcd.print(" ");
+      lcd.setCursor(19, 1);
+      lcd.print(" ");
+      lcd.setCursor(19, 2);
+      lcd.print("*");
+      lcd.setCursor(19, 3);
+      lcd.print(" ");
+
+    }
+
+    if (cursorPantalla == 3) {
+      lcd.setCursor(19, 0);
+      lcd.print(" ");
+      lcd.setCursor(19, 1);
+      lcd.print(" ");
+      lcd.setCursor(19, 2);
+      lcd.print(" ");
+      lcd.setCursor(19, 3);
+      lcd.print("*");
+
+    }
 
   }
 
-  if (cursorPantalla == 1) {
-    lcd.setCursor(19, 0);
-    lcd.print(" ");
-    lcd.setCursor(19, 1);
-    lcd.print("*");
-    lcd.setCursor(19, 2);
-    lcd.print(" ");
-    lcd.setCursor(19, 3);
-    lcd.print(" ");
+  if (estadoMaquinaGeneral != PANTALLA_GENERAL && estadoMaquinaGeneral != MOVIMIENTOS_CURSOR) {
 
-  }
-
-  if (cursorPantalla == 2) {
-    lcd.setCursor(19, 0);
-    lcd.print(" ");
-    lcd.setCursor(19, 1);
-    lcd.print(" ");
-    lcd.setCursor(19, 2);
-    lcd.print("*");
-    lcd.setCursor(19, 3);
-    lcd.print(" ");
-
-  }
-
-  if (cursorPantalla == 3) {
     lcd.setCursor(19, 0);
     lcd.print(" ");
     lcd.setCursor(19, 1);
@@ -503,11 +578,111 @@ void movimientosCursor() {
     lcd.setCursor(19, 2);
     lcd.print(" ");
     lcd.setCursor(19, 3);
-    lcd.print("*");
-
+    lcd.print(" ");
   }
 
 }
+
+void pantallaMenuGeneralSetUp() {
+
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(bmp.readTemperature());
+
+    lcd.setCursor(0, 1);
+    lcd.print("Humedad: ");
+    lcd.print(humedadPorcentaje);
+
+    lcd.setCursor(0, 2);
+    lcd.print("Luz: ");
+    lcd.print(luzPorcentaje);
+
+
+    lcd.setCursor(0, 3);
+    lcd.print("Cooler: ");
+
+    if (estadoCooler == 1) {
+      lcd.setCursor(8, 3);
+      lcd.print("On");
+    }
+
+    if (estadoCooler == 0) {
+      lcd.setCursor(8, 3);
+      lcd.print("Off");
+    }
+
+  if (luzPorcentaje < 10) {
+    lcd.setCursor(6, 2);
+    lcd.print(" ");
+  }
+
+  if (luzPorcentaje < 100) {
+    lcd.setCursor(7, 2);
+    lcd.print(" ");
+  }
+
+
+  if (humedadPorcentaje < 10) {
+    lcd.setCursor(10, 1);
+    lcd.print(" ");
+  }
+
+  if (humedadPorcentaje < 100) {
+    lcd.setCursor(11, 1);
+    lcd.print(" ");
+  }
+
+
+
+}
+
+/*
+  void lecturaTiempoBot () {
+
+  if (millis() > lastTimeBotRan + botRequestDelay) {
+    int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+
+    while (numNewMessages) {
+      Serial.println("Veo los msj nuevos");
+      handleNewMessages(numNewMessages);
+      numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+    }
+    lastTimeBotRan = millis();
+
+  }
+
+
+  }
+
+  void handleNewMessages(int numNewMessages) {
+  Serial.println("Mensaje nuevo");
+  Serial.println(String(numNewMessages));
+
+  for (int i = 0; i < numNewMessages; i++) {
+    // inicio de verificacion
+    String chat_id = String(bot.messages[i].chat_id);
+    if (chat_id != CHAT_ID) {  ////si el id no corresponde da error . en caso de que no se quiera comprobar el id se debe sacar esta parte
+      bot.sendMessage(chat_id, "Unauthorized user", "");
+      continue;
+    }
+    ///fin de verificacion
+
+    // imprime el msj recibido
+    String text = bot.messages[i].text;
+    Serial.println(text);
+
+    String from_name = bot.messages[i].from_name;
+
+    /// si rebice /led on enciende el led
+    if (text == "/temperatura_actual") {
+      bot.sendMessage(chat_id, (String)bmp.readTemperature(), "");
+    }
+
+  }
+
+  }
+
+*/
 
 /*
 
