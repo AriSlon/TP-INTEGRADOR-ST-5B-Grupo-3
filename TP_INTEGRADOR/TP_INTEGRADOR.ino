@@ -89,9 +89,16 @@ int estadoBotonAbajo;
 int estadoBotonEnter;
 
 int estadoMaquinaGeneral;
+int estadoMaquinaBuzzer;
+
 
 unsigned long milisActuales;
 unsigned long milisPrevios;
+
+unsigned long milisActualesBuzzer;
+unsigned long milisPreviosBuzzer;
+
+
 
 bool estadoCooler;
 
@@ -108,6 +115,9 @@ int cursorPantalla;
 
 bool chequeoCursor;
 bool chequeoPantallaUmbral;
+bool prendidoBuzzer;
+
+float temperatura;
 
 void setup() {
 
@@ -193,9 +203,9 @@ void setup() {
 
   lcd.clear();
 
-pantallaMenuGeneralSetUp();
+  pantallaMenuGeneralSetUp();
 
-  lcd.setCursor(0, 19);
+  lcd.setCursor(19, 0);
   lcd.print("*");
 
 }
@@ -230,11 +240,12 @@ void loop() {
   digitalWrite(PIN_LED_AMARILLO, HIGH);
   digitalWrite(PIN_LED_ROJO, HIGH);
 
+  temperatura = bmp.readTemperature();
+
   humedad = analogRead(PIN_SENSOR_HUMEDAD);
   humedadPorcentaje = map(humedad, 0, 2950, 0, 100);
 
   luz = lightMeter.readLightLevel();
-
   luzPorcentaje = map(luz, 0, 65535, 0, 100);
 
   if (PIN_RELE_COOLER == HIGH) {
@@ -255,6 +266,7 @@ void loop() {
     cursorPantalla = 3;
   }
 
+
   maquinaDeEstadosGeneral();
   movimientosCursor();
 
@@ -269,6 +281,8 @@ void maquinaDeEstadosGeneral () {
   switch (estadoMaquinaGeneral) {
 
     case PANTALLA_GENERAL:
+
+      pantallaMenuGeneral();
 
       if (estadoBotonAbajo == PRESIONADO) {
         chequeoCursor = ABAJO;
@@ -288,8 +302,13 @@ void maquinaDeEstadosGeneral () {
         estadoMaquinaGeneral = ESPERA_GENERAL_UMBRALHUM;
       }
 
-      pantallaMenuGeneral();
+      if (bmp.readTemperature() > valorUmbralTemp) {
+        buzzer();
+      }
 
+      if (bmp.readTemperature() < valorUmbralTemp) {
+        ledcWrite(BUZZER_CHANNEL, 0);
+      }
 
 
       break;
@@ -322,6 +341,11 @@ void maquinaDeEstadosGeneral () {
         chequeoPantallaUmbral = TEMPERATURA;
         estadoMaquinaGeneral = ESPERA_VUELTA_GENERAL;
       }
+
+      if (bmp.readTemperature() < valorUmbralTemp) {
+        ledcWrite(BUZZER_CHANNEL, 0);
+      }
+
 
       break;
 
@@ -585,31 +609,31 @@ void movimientosCursor() {
 
 void pantallaMenuGeneralSetUp() {
 
-    lcd.setCursor(0, 0);
-    lcd.print("Temp: ");
-    lcd.print(bmp.readTemperature());
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.print(bmp.readTemperature());
 
-    lcd.setCursor(0, 1);
-    lcd.print("Humedad: ");
-    lcd.print(humedadPorcentaje);
+  lcd.setCursor(0, 1);
+  lcd.print("Humedad: ");
+  lcd.print(humedadPorcentaje);
 
-    lcd.setCursor(0, 2);
-    lcd.print("Luz: ");
-    lcd.print(luzPorcentaje);
+  lcd.setCursor(0, 2);
+  lcd.print("Luz: ");
+  lcd.print(luzPorcentaje);
 
 
-    lcd.setCursor(0, 3);
-    lcd.print("Cooler: ");
+  lcd.setCursor(0, 3);
+  lcd.print("Cooler: ");
 
-    if (estadoCooler == 1) {
-      lcd.setCursor(8, 3);
-      lcd.print("On");
-    }
+  if (estadoCooler == 1) {
+    lcd.setCursor(8, 3);
+    lcd.print("On");
+  }
 
-    if (estadoCooler == 0) {
-      lcd.setCursor(8, 3);
-      lcd.print("Off");
-    }
+  if (estadoCooler == 0) {
+    lcd.setCursor(8, 3);
+    lcd.print("Off");
+  }
 
   if (luzPorcentaje < 10) {
     lcd.setCursor(6, 2);
@@ -633,6 +657,42 @@ void pantallaMenuGeneralSetUp() {
   }
 
 
+
+}
+
+void buzzer() {
+
+  milisActualesBuzzer = millis();
+
+  switch (estadoMaquinaBuzzer) {
+
+    case 0:
+
+      ledcWrite(BUZZER_CHANNEL, 128);
+
+      if ((milisActualesBuzzer - milisPreviosBuzzer) > 150) {
+
+        milisPreviosBuzzer = milisActualesBuzzer;
+        estadoMaquinaBuzzer = 1;
+
+      }
+
+      break;
+
+    case 1:
+
+      ledcWrite(BUZZER_CHANNEL, 0);
+
+      if ((milisActualesBuzzer - milisPreviosBuzzer) > 150) {
+
+        milisPreviosBuzzer = milisActualesBuzzer;
+        estadoMaquinaBuzzer = 0;
+
+      }
+
+      break;
+
+  }
 
 }
 
@@ -677,169 +737,6 @@ void pantallaMenuGeneralSetUp() {
     if (text == "/temperatura_actual") {
       bot.sendMessage(chat_id, (String)bmp.readTemperature(), "");
     }
-
-  }
-
-  }
-
-*/
-
-/*
-
-  void loop() {
-
-    Serial.print(F("Temperature = "));
-    Serial.print(bmp.readTemperature());
-    Serial.println(" *C");
-
-  }
-
-  void loop() {
-
-  uint16_t lux = lightMeter.readLightLevel();
-
-  Serial.print("Light: ");
-  Serial.print(lux);
-  Serial.println(" lx");
-
-  }
-
-  void loop() {
-
-  humedad = analogRead(PIN_SENSOR_HUMEDAD);
-  Serial.println(humedad);
-
-  }
-
-  void loop() {
-
-  milisActuales = millis();
-
-  switch (estadoMaquina) {
-
-    case 0:
-
-      lcd.setCursor(0, 0);
-      lcd.print("Test Funcionamiento");
-      lcd.setCursor(0, 1);
-      lcd.print("Pantalla LCD");
-      lcd.setCursor(0, 2);
-      lcd.print("20x4 I2C");
-
-
-      if ((milisActuales - milisPrevios) > 6000) {
-
-
-        estadoMaquina = 1;
-        milisPrevios = milisActuales;
-
-      }
-
-      break;
-
-    case 1:
-
-      lcd.clear();
-      lcd.setCursor(3, 1);
-      lcd.print("Hola Veckiardo");
-
-      estadoMaquina = 2;
-
-      break;
-
-      case 2:
-
-      break;
-
-  }
-
-  }
-
-  void loop() {
-
-  Serial.print(digitalRead(4));
-  ledcWrite(BUZZER_CHANNEL, 128);
-
-  delay(2000);
-
-  ledcWrite(BUZZER_CHANNEL, 0);
-
-  delay(2000);
-
-  }
-
-  void loop() {
-
-  digitalWrite(PIN_RELE_COOLER, HIGH);
-
-  delay(5000);
-
-  digitalWrite(PIN_RELE_COOLER, LOW);
-
-  delay(5000);
-
-  }
-
-  void loop() {
-
-  digitalWrite(PIN_LED_ROJO, HIGH);
-  digitalWrite(PIN_LED_AMARILLO, HIGH);
-  digitalWrite(PIN_LED_VERDE, HIGH);
-
-
-  #define PIN_LED_ROJO 12
-  #define PIN_LED_AMARILLO 14
-  #define PIN_LED_VERDE 27
-
-  void setup() {
-  // put your setup code here, to run once:
-
-  pinMode(PIN_LED_ROJO, OUTPUT);
-  pinMode(PIN_LED_AMARILLO, OUTPUT);
-  pinMode(PIN_LED_VERDE, OUTPUT);
-
-
-  }
-
-  void loop() {
-
-  digitalWrite(PIN_LED_VERDE, HIGH);
-  digitalWrite(PIN_LED_AMARILLO, HIGH);
-  digitalWrite(PIN_LED_ROJO, HIGH);
-
-  }
-
-  void buzzerTercerUmbral() {
-
-  milisActualesBuzzerTercerUmbral = millis();
-
-  switch (estadoMaquinaBuzzerTercerUmbral) {
-
-    case 0:
-
-      ledcWrite(BUZZER_CHANNEL, 128);
-
-      if ((milisActualesBuzzerTercerUmbral - milisPreviosBuzzerTercerUmbral) > 150) {
-
-        milisPreviosBuzzerTercerUmbral = milisActualesBuzzerTercerUmbral;
-        estadoMaquinaBuzzerTercerUmbral = 1;
-
-      }
-
-      break;
-
-    case 1:
-
-      ledcWrite(BUZZER_CHANNEL, 0);
-
-      if ((milisActualesBuzzerTercerUmbral - milisPreviosBuzzerTercerUmbral) > 150) {
-
-        milisPreviosBuzzerTercerUmbral = milisActualesBuzzerTercerUmbral;
-        estadoMaquinaBuzzerTercerUmbral = 0;
-
-      }
-
-      break;
 
   }
 
