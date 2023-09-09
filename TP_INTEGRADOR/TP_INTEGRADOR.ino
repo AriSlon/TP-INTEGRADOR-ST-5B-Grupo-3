@@ -40,6 +40,9 @@
 #define TEMPERATURA 0
 #define HUMEDAD 1
 
+#define OFF 0
+#define ON 1
+
 #define PANTALLA_GENERAL 0
 #define ESPERA_GENERAL_UMBRALTEMP 1
 #define PANTALLA_UMBRAL_TEMPERATURA 2
@@ -82,6 +85,12 @@ String mensaje = "La temperatura actual es: ";
 int botRequestDelay = 1000; /// intervalo
 unsigned long lastTimeBotRan; /// ultimo tiempo
 
+unsigned long milisActuales;
+unsigned long milisPrevios;
+
+unsigned long milisActualesBuzzer;
+unsigned long milisPreviosBuzzer;
+
 int estadoBotonIzquierda;
 int estadoBotonDerecha;
 int estadoBotonArriba;
@@ -90,17 +99,6 @@ int estadoBotonEnter;
 
 int estadoMaquinaGeneral;
 int estadoMaquinaBuzzer;
-
-
-unsigned long milisActuales;
-unsigned long milisPrevios;
-
-unsigned long milisActualesBuzzer;
-unsigned long milisPreviosBuzzer;
-
-
-
-bool estadoCooler;
 
 int luzPorcentaje;
 int luz;
@@ -113,6 +111,7 @@ int valorUmbralHum;
 
 int cursorPantalla;
 
+bool estadoCooler;
 bool chequeoCursor;
 bool chequeoPantallaUmbral;
 bool prendidoBuzzer;
@@ -233,13 +232,6 @@ void loop() {
   Serial.print("Boton 5: ");
   Serial.println(estadoBotonEnter);
 
-
-  Serial.println(cursorPantalla);
-
-  digitalWrite(PIN_LED_VERDE, HIGH);
-  digitalWrite(PIN_LED_AMARILLO, HIGH);
-  digitalWrite(PIN_LED_ROJO, HIGH);
-
   temperatura = bmp.readTemperature();
 
   humedad = analogRead(PIN_SENSOR_HUMEDAD);
@@ -248,14 +240,29 @@ void loop() {
   luz = lightMeter.readLightLevel();
   luzPorcentaje = map(luz, 0, 65535, 0, 100);
 
-  if (PIN_RELE_COOLER == HIGH) {
+  if (humedadPorcentaje <= 33) {
+    digitalWrite(PIN_LED_VERDE, HIGH);
+    digitalWrite(PIN_LED_AMARILLO, LOW);
+    digitalWrite(PIN_LED_ROJO, LOW);
+    digitalWrite(PIN_RELE_COOLER, OFF);
+    estadoCooler = 0;
 
-    estadoCooler = 1;
   }
 
-  if (PIN_RELE_COOLER == LOW) {
-
+  if (humedadPorcentaje > 33 && humedadPorcentaje <= 66) {
+    digitalWrite(PIN_LED_VERDE, LOW);
+    digitalWrite(PIN_LED_AMARILLO, HIGH);
+    digitalWrite(PIN_LED_ROJO, LOW);
+    digitalWrite(PIN_RELE_COOLER, OFF);
     estadoCooler = 0;
+  }
+
+  if (humedadPorcentaje > 66) {
+    digitalWrite(PIN_LED_VERDE, LOW);
+    digitalWrite(PIN_LED_AMARILLO, LOW);
+    digitalWrite(PIN_LED_ROJO, HIGH);
+    digitalWrite(PIN_RELE_COOLER, ON);
+    estadoCooler = 1;
   }
 
   if (cursorPantalla < 0) {
@@ -316,6 +323,7 @@ void maquinaDeEstadosGeneral () {
     case ESPERA_GENERAL_UMBRALTEMP:
 
       pantallaMenuGeneral();
+      ledcWrite(BUZZER_CHANNEL, 0);
 
       if (estadoBotonEnter == SUELTO) {
         lcd.clear();
@@ -374,6 +382,7 @@ void maquinaDeEstadosGeneral () {
     case ESPERA_GENERAL_UMBRALHUM:
 
       pantallaMenuGeneral();
+      ledcWrite(BUZZER_CHANNEL, 0);
 
       if (estadoBotonEnter == SUELTO) {
         lcd.clear();
@@ -438,6 +447,7 @@ void maquinaDeEstadosGeneral () {
         preferencesTemp.putInt("memoria", valorUmbralTemp);
         preferencesHum.putInt("memoria2", valorUmbralHum);
         lcd.clear();
+        milisPrevios = 0;
         estadoMaquinaGeneral = PANTALLA_GENERAL;
       }
 
@@ -670,7 +680,7 @@ void buzzer() {
 
       ledcWrite(BUZZER_CHANNEL, 128);
 
-      if ((milisActualesBuzzer - milisPreviosBuzzer) > 150) {
+      if ((milisActualesBuzzer - milisPreviosBuzzer) > 1000) {
 
         milisPreviosBuzzer = milisActualesBuzzer;
         estadoMaquinaBuzzer = 1;
@@ -683,7 +693,7 @@ void buzzer() {
 
       ledcWrite(BUZZER_CHANNEL, 0);
 
-      if ((milisActualesBuzzer - milisPreviosBuzzer) > 150) {
+      if ((milisActualesBuzzer - milisPreviosBuzzer) > 1000) {
 
         milisPreviosBuzzer = milisActualesBuzzer;
         estadoMaquinaBuzzer = 0;
