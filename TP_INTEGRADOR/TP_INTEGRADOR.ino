@@ -142,9 +142,6 @@ void setup() {
   pinMode(PIN_LED_AMARILLO, OUTPUT);
   pinMode(PIN_LED_VERDE, OUTPUT);
 
-
-  // /*while ( !Serial ) delay(100);
-
   Serial.println(F("BMP280 test"));
 
   unsigned status;
