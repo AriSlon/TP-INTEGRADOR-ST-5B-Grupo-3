@@ -1,3 +1,13 @@
+/* Codio general 
+   Trabajo Practico Integrador
+
+   Materia: Seminario de Informatica y Telecomunicaciones (ST).
+   Grupo: 3.
+   Integrantes: Santiago Eulmesekian, Mateo Iadarola, Ariel Rakowszczyk, Santiago Rapetti y Ariel Slonimsqui.
+   Profesor: Mirko Veckiardo.
+
+*/
+
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_BMP280.h>
