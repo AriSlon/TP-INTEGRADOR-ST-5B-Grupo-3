@@ -8,7 +8,7 @@
  *
 */
 
-#define PIN_SENSOR 36
+#define PIN_SENSOR 0
 
 float humedad;
 

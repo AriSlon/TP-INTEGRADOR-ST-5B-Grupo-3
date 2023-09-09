@@ -12,12 +12,12 @@ void loop() {
   digitalWrite(15, HIGH);
   Serial.println(digitalRead(15));
 
-  delay(1000);
+  delay(5000);
 
   digitalWrite(15, LOW);
   Serial.println(digitalRead(15));
 
-  delay(1000);
+  delay(5000);
   
 }
 

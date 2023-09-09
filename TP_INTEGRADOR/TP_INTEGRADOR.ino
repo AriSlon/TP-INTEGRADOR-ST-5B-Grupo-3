@@ -22,11 +22,11 @@
 #define PIN_BOTON_ABAJO 33
 #define PIN_BOTON_ENTER 25
 
-#define PIN_SENSOR_HUMEDAD 2
+#define PIN_SENSOR_HUMEDAD 0
 #define PIN_RELE_COOLER 15
-#define PIN_LED_ROJO 12
+#define PIN_LED_ROJO 27
 #define PIN_LED_AMARILLO 14
-#define PIN_LED_VERDE 27
+#define PIN_LED_VERDE 12
 
 #define BUZZER_PIN 4    // Pin del buzzer
 #define BUZZER_CHANNEL 0 // Canal PWM del buzzer
@@ -40,8 +40,8 @@
 #define TEMPERATURA 0
 #define HUMEDAD 1
 
-#define OFF 0
-#define ON 1
+#define OFF 1
+#define ON 0
 
 #define PANTALLA_GENERAL 0
 #define ESPERA_GENERAL_UMBRALTEMP 1
@@ -176,7 +176,7 @@ void setup() {
       }
 
       Serial.println(WiFi.localIP());
-      bot.sendMessage(CHAT_ID, "Conexion establecida entre el Bot y el microcontrolador", "");
+      bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
 
   */
   Wire.begin();
@@ -221,26 +221,29 @@ void loop() {
   estadoBotonAbajo = digitalRead(PIN_BOTON_4);
   estadoBotonEnter = digitalRead(PIN_BOTON_5);
 
-  Serial.print("Boton 1: ");
-  Serial.println(estadoBotonIzquierda);
-  Serial.print("Boton 2: ");
-  Serial.println(estadoBotonDerecha);
-  Serial.print("Boton 3: ");
-  Serial.println(estadoBotonArriba);
-  Serial.print("Boton 4: ");
-  Serial.println(estadoBotonAbajo);
-  Serial.print("Boton 5: ");
-  Serial.println(estadoBotonEnter);
+  /* Serial.print("Boton 1: ");
+    Serial.println(estadoBotonIzquierda);
+    Serial.print("Boton 2: ");
+    Serial.println(estadoBotonDerecha);
+    Serial.print("Boton 3: ");
+    Serial.println(estadoBotonArriba);
+    Serial.print("Boton 4: ");
+    Serial.println(estadoBotonAbajo);
+    Serial.print("Boton 5: ");
+    Serial.println(estadoBotonEnter);
+  */
+  Serial.println(luzPorcentaje);
+
 
   temperatura = bmp.readTemperature();
 
   humedad = analogRead(PIN_SENSOR_HUMEDAD);
-  humedadPorcentaje = map(humedad, 0, 2950, 0, 100);
+  humedadPorcentaje = map(humedad, 0, 4095, 100, 0);
 
   luz = lightMeter.readLightLevel();
   luzPorcentaje = map(luz, 0, 65535, 0, 100);
 
-  if (humedadPorcentaje <= 33) {
+  if (humedadPorcentaje <= 20) {
     digitalWrite(PIN_LED_VERDE, HIGH);
     digitalWrite(PIN_LED_AMARILLO, LOW);
     digitalWrite(PIN_LED_ROJO, LOW);
@@ -249,7 +252,7 @@ void loop() {
 
   }
 
-  if (humedadPorcentaje > 33 && humedadPorcentaje <= 66) {
+  if (humedadPorcentaje > 30 && humedadPorcentaje <= 45) {
     digitalWrite(PIN_LED_VERDE, LOW);
     digitalWrite(PIN_LED_AMARILLO, HIGH);
     digitalWrite(PIN_LED_ROJO, LOW);
@@ -257,7 +260,7 @@ void loop() {
     estadoCooler = 0;
   }
 
-  if (humedadPorcentaje > 66) {
+  if (humedadPorcentaje > 45) {
     digitalWrite(PIN_LED_VERDE, LOW);
     digitalWrite(PIN_LED_AMARILLO, LOW);
     digitalWrite(PIN_LED_ROJO, HIGH);
@@ -493,7 +496,7 @@ void pantallaMenuGeneral() {
 
     if (estadoCooler == 1) {
       lcd.setCursor(8, 3);
-      lcd.print("On");
+      lcd.print("On ");
     }
 
     if (estadoCooler == 0) {
