@@ -14,10 +14,6 @@
 #include <BH1750.h>
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
-//#include <WiFi.h>
-//#include <WiFiClientSecure.h>
-//#include <UniversalTelegramBot.h>
-//#include <ArduinoJson.h>
 
 
 #define PIN_BOTON_1 34
@@ -69,8 +65,6 @@
 #define ESPERA_2 9
 #define ESPERA_2 10
 
-//#define BOTtoken "6582349263:AAHnC5r8S53ASk3J4RTncCs0LZy2-jA65pY"
-//#define CHAT_ID "5939693005"
 
 Adafruit_BMP280 bmp;
 
@@ -81,19 +75,7 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 Preferences preferencesTemp;
 Preferences preferencesHum;
 
-//WiFiClientSecure client;
-//UniversalTelegramBot bot(BOTtoken, client);
 
-const char* ssid = "ari";
-const char* password = "004367225aa";
-
-//const char* ssid = "ORT-IoT";
-//const char* password = "OrtIOTnew22$2";
-
-String mensaje = "La temperatura actual es: ";
-
-int botRequestDelay = 1000; /// intervalo
-unsigned long lastTimeBotRan; /// ultimo tiempo
 
 unsigned long milisActuales;
 unsigned long milisPrevios;
@@ -170,22 +152,7 @@ void setup() {
 
   //*/
 
-  /*
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
-
-
-      while (WiFi.status() != WL_CONNECTED) {
-      delay(1000);
-      Serial.println("Connecting to WiFi..");
-      }
-
-      Serial.println(WiFi.localIP());
-      bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
-
-  */
   Wire.begin();
 
   lightMeter.begin();
@@ -286,8 +253,6 @@ void loop() {
 
   maquinaDeEstadosGeneral();
   movimientosCursor();
-
-  //lecturaTiempoBot();
 
 
 }

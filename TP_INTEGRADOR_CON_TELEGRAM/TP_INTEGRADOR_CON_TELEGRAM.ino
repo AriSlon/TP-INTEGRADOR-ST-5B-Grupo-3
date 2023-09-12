@@ -32,7 +32,7 @@
 #define PIN_BOTON_ABAJO 33
 #define PIN_BOTON_ENTER 25
 
-#define PIN_SENSOR_HUMEDAD 0
+#define PIN_SENSOR_HUMEDAD 36
 #define PIN_RELE_COOLER 15
 #define PIN_LED_ROJO 27
 #define PIN_LED_AMARILLO 14
@@ -84,11 +84,11 @@ Preferences preferencesHum;
 WiFiClientSecure client;
 UniversalTelegramBot bot(BOTtoken, client);
 
-const char* ssid = "ari";
-const char* password = "004367225aa";
+//const char* ssid = "ari";
+//const char* password = "004367225aa";
 
-//const char* ssid = "ORT-IoT";
-//const char* password = "OrtIOTnew22$2";
+const char* ssid = "ORT-IoT";
+const char* password = "OrtIOTnew22$2";
 
 String mensaje = "La temperatura actual es: ";
 
@@ -125,12 +125,13 @@ bool estadoCooler;
 bool chequeoCursor;
 bool chequeoPantallaUmbral;
 bool prendidoBuzzer;
+bool flagTemperatura;
+
 
 float temperatura;
 
 void setup() {
 
-  Serial.begin(9600);
 
   pinMode(PIN_BOTON_1, INPUT);
   pinMode(PIN_BOTON_2, INPUT);
@@ -142,25 +143,9 @@ void setup() {
   pinMode(PIN_LED_AMARILLO, OUTPUT);
   pinMode(PIN_LED_VERDE, OUTPUT);
 
-  Serial.println(F("BMP280 test"));
-
   unsigned status;
 
   status = bmp.begin(0x76);
-
-  if (!status) {
-
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                     "try a different address!"));
-    Serial.print("SensorID was: 0x"); Serial.println(bmp.sensorID(), 16);
-    Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-    Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-    Serial.print("        ID of 0x60 represents a BME 280.\n");
-    Serial.print("        ID of 0x61 represents a BME 680.\n");
-    while (1) delay(10);
-  }
-
-  // Default settings from datasheet.
 
   bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     // Operating Mode.
                   Adafruit_BMP280::SAMPLING_X2,     // Temp. oversampling
@@ -169,28 +154,15 @@ void setup() {
                   Adafruit_BMP280::STANDBY_MS_500); // Standby time.
 
 
-
-
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
-
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
-
-  Serial.println(WiFi.localIP());
   bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
-
 
   Wire.begin();
 
   lightMeter.begin();
-
-  Serial.println(F("BH1750 Test begin"));
 
   preferencesTemp.begin("memoria", valorUmbralTemp);
   preferencesHum.begin("memoria2", valorUmbralHum);
@@ -226,20 +198,6 @@ void loop() {
   estadoBotonArriba = digitalRead(PIN_BOTON_3);
   estadoBotonAbajo = digitalRead(PIN_BOTON_4);
   estadoBotonEnter = digitalRead(PIN_BOTON_5);
-
-  /* Serial.print("Boton 1: ");
-    Serial.println(estadoBotonIzquierda);
-    Serial.print("Boton 2: ");
-    Serial.println(estadoBotonDerecha);
-    Serial.print("Boton 3: ");
-    Serial.println(estadoBotonArriba);
-    Serial.print("Boton 4: ");
-    Serial.println(estadoBotonAbajo);
-    Serial.print("Boton 5: ");
-    Serial.println(estadoBotonEnter);
-  */
-  Serial.println(humedad);
-
 
   temperatura = bmp.readTemperature();
 
@@ -282,6 +240,29 @@ void loop() {
     cursorPantalla = 3;
   }
 
+  if (flagTemperatura == 0) {
+
+    if (temperatura > valorUmbralTemp) {
+
+      flagTemperatura = 1;
+
+      bot.sendMessage(CHAT_ID, "La temperatura supero el valor umbral!!!", "");
+    }
+
+  }
+
+  if (flagTemperatura == 1) {
+
+
+    if (temperatura < valorUmbralTemp) {
+
+      flagTemperatura = 0;
+
+      bot.sendMessage(CHAT_ID, "La temperatura es menor al valor umbral", "");
+
+    }
+
+  }
 
   maquinaDeEstadosGeneral();
   movimientosCursor();
@@ -716,13 +697,12 @@ void buzzer() {
 }
 
 
-  void lecturaTiempoBot () {
+void lecturaTiempoBot () {
 
   if (millis() > lastTimeBotRan + botRequestDelay) {
     int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
 
     while (numNewMessages) {
-      Serial.println("Veo los msj nuevos");
       handleNewMessages(numNewMessages);
       numNewMessages = bot.getUpdates(bot.last_message_received + 1);
     }
@@ -731,11 +711,10 @@ void buzzer() {
   }
 
 
-  }
+}
 
-  void handleNewMessages(int numNewMessages) {
-  Serial.println("Mensaje nuevo");
-  Serial.println(String(numNewMessages));
+void handleNewMessages(int numNewMessages) {
+
 
   for (int i = 0; i < numNewMessages; i++) {
     // inicio de verificacion
@@ -748,7 +727,6 @@ void buzzer() {
 
     // imprime el msj recibido
     String text = bot.messages[i].text;
-    Serial.println(text);
 
     String from_name = bot.messages[i].from_name;
 
@@ -759,4 +737,4 @@ void buzzer() {
 
   }
 
-  }
+}
