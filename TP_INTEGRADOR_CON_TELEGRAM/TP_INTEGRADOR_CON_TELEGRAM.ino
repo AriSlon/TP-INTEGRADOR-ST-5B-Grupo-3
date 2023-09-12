@@ -14,10 +14,10 @@
 #include <BH1750.h>
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
-//#include <WiFi.h>
-//#include <WiFiClientSecure.h>
-//#include <UniversalTelegramBot.h>
-//#include <ArduinoJson.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
 
 
 #define PIN_BOTON_1 34
@@ -69,8 +69,8 @@
 #define ESPERA_2 9
 #define ESPERA_2 10
 
-//#define BOTtoken "6582349263:AAHnC5r8S53ASk3J4RTncCs0LZy2-jA65pY"
-//#define CHAT_ID "5939693005"
+#define BOTtoken "6582349263:AAHnC5r8S53ASk3J4RTncCs0LZy2-jA65pY"
+#define CHAT_ID "5939693005"
 
 Adafruit_BMP280 bmp;
 
@@ -81,8 +81,8 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 Preferences preferencesTemp;
 Preferences preferencesHum;
 
-//WiFiClientSecure client;
-//UniversalTelegramBot bot(BOTtoken, client);
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOTtoken, client);
 
 const char* ssid = "ari";
 const char* password = "004367225aa";
@@ -168,24 +168,24 @@ void setup() {
                   Adafruit_BMP280::FILTER_X16,      // Filtering.
                   Adafruit_BMP280::STANDBY_MS_500); // Standby time.
 
-  //*/
-
-  /*
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
 
 
-      while (WiFi.status() != WL_CONNECTED) {
-      delay(1000);
-      Serial.println("Connecting to WiFi..");
-      }
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
-      Serial.println(WiFi.localIP());
-      bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
 
-  */
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+
+  Serial.println(WiFi.localIP());
+  bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
+
+
   Wire.begin();
 
   lightMeter.begin();
@@ -215,7 +215,6 @@ void setup() {
   lcd.print("*");
 
 }
-
 
 
 void loop() {
@@ -287,7 +286,7 @@ void loop() {
   maquinaDeEstadosGeneral();
   movimientosCursor();
 
-  //lecturaTiempoBot();
+  lecturaTiempoBot();
 
 
 }
@@ -716,8 +715,8 @@ void buzzer() {
 
 }
 
-/*
-void lecturaTiempoBot () {
+
+  void lecturaTiempoBot () {
 
   if (millis() > lastTimeBotRan + botRequestDelay) {
     int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
@@ -732,9 +731,9 @@ void lecturaTiempoBot () {
   }
 
 
-}
+  }
 
-void handleNewMessages(int numNewMessages) {
+  void handleNewMessages(int numNewMessages) {
   Serial.println("Mensaje nuevo");
   Serial.println(String(numNewMessages));
 
@@ -760,5 +759,4 @@ void handleNewMessages(int numNewMessages) {
 
   }
 
-}
-*/
+  }
