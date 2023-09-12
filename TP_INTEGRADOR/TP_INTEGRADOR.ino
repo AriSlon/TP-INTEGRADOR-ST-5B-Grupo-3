@@ -15,7 +15,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
 
-
 #define PIN_BOTON_1 34
 #define PIN_BOTON_2 35
 #define PIN_BOTON_3 32
@@ -28,7 +27,7 @@
 #define PIN_BOTON_ABAJO 33
 #define PIN_BOTON_ENTER 25
 
-#define PIN_SENSOR_HUMEDAD 0
+#define PIN_SENSOR_HUMEDAD 36
 #define PIN_RELE_COOLER 15
 #define PIN_LED_ROJO 27
 #define PIN_LED_AMARILLO 14

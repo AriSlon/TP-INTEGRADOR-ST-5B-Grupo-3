@@ -19,7 +19,6 @@
 #include <UniversalTelegramBot.h>
 #include <ArduinoJson.h>
 
-
 #define PIN_BOTON_1 34
 #define PIN_BOTON_2 35
 #define PIN_BOTON_3 32
