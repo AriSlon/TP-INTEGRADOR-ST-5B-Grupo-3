@@ -15,6 +15,9 @@
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
 #include <ESP32Time.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
 #include "time.h"
 #include <WiFi.h>
 
@@ -68,6 +71,9 @@
 #define ESPERA_MQTT_GMT_GENERAL 14
 #define MOVIMIENTOS_CURSOR 15
 
+#define BOTtoken "6582349263:AAHnC5r8S53ASk3J4RTncCs0LZy2-jA65pY"
+#define CHAT_ID "5939693005"
+
 Adafruit_BMP280 bmp;
 
 BH1750 lightMeter(0x23);
@@ -79,6 +85,9 @@ Preferences preferencesHum1;
 Preferences preferencesHum2;
 
 ESP32Time rtc;
+
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOTtoken, client);
 
 unsigned long milisActuales;
 unsigned long milisPrevios;
@@ -113,6 +122,7 @@ bool estadoCooler;
 bool chequeoCursor;
 bool chequeoPantallaUmbral;
 bool prendidoBuzzer;
+bool flagTemperatura;
 
 float temperatura;
 
@@ -134,8 +144,14 @@ const char* password = "004367225aa";
 
 struct tm timeinfo;
 
+int botRequestDelay = 1000; /// intervalo
+unsigned long lastTimeBotRan; /// ultimo tiempo
+
+
 void pedir_lahora(void); // Declaracion de funcion
 void setup_rtc_ntp(void); // Declaracion de funcion
+
+TaskHandle_t Task1;
 
 void setup() {
 
@@ -151,8 +167,7 @@ void setup() {
   pinMode(PIN_LED_AMARILLO, OUTPUT);
   pinMode(PIN_LED_VERDE, OUTPUT);
 
-  Serial.println(F("BMP280 test"));
-
+  
   unsigned status;
 
   status = bmp.begin(0x76);
@@ -190,6 +205,19 @@ void setup() {
   Serial.println(WiFi.localIP());
   Serial.println();
 
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+  xTaskCreatePinnedToCore(
+                    Task1code,   /* Task function. */
+                    "Task1",     /* name of task. */
+                    10000,       /* Stack size of task */
+                    NULL,        /* parameter of the task */
+                    1,           /* priority of the task */
+                    &Task1,      /* Task handle to keep track of created task */
+                    0);          /* pin task to core 0 */      
+
+  client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+
+  bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
   Wire.begin();
 
   lightMeter.begin();
@@ -320,7 +348,11 @@ void loop() {
   movimientosCursor();
 
 
-}
+
+
+  }
+
+
 
 
 void maquinaDeEstadosGeneral () {
@@ -557,7 +589,7 @@ void maquinaDeEstadosGeneral () {
       if (cursorPantalla == 0 && estadoBotonIzquierda == PRESIONADO) {
         estadoMaquinaGeneral = RESTA_MQTT_GMT;
       }
-
+      
       if (cursorPantalla == 1 && estadoBotonDerecha == PRESIONADO && gmt < 12) {
         estadoMaquinaGeneral = SUMA_MQTT_GMT;
       }
@@ -973,7 +1005,7 @@ void setup_rtc_ntp(void) {
 
 
 
-/*
+
   void lecturaTiempoBot () {
 
   if (millis() > lastTimeBotRan + botRequestDelay) {
@@ -1018,4 +1050,37 @@ void setup_rtc_ntp(void) {
   }
 
   }
-*/
+
+
+  void Task1code( void * pvParameters ){
+  Serial.print("Task1 running on core ");
+  Serial.println(xPortGetCoreID());
+
+  for(;;){
+    if (flagTemperatura == 0) {
+
+    if (temperatura > valorUmbralTemp) {
+
+      flagTemperatura = 1;
+
+      bot.sendMessage(CHAT_ID, "La temperatura supero el valor umbral!!!", "");
+    }
+
+  }
+
+  if (flagTemperatura == 1) {
+
+
+    if (temperatura < valorUmbralTemp) {
+
+      flagTemperatura = 0;
+
+      bot.sendMessage(CHAT_ID, "La temperatura es menor al valor umbral", "");
+
+    }
+
+  }
+
+  lecturaTiempoBot();
+  } 
+}
