@@ -167,7 +167,7 @@ void setup() {
   pinMode(PIN_LED_AMARILLO, OUTPUT);
   pinMode(PIN_LED_VERDE, OUTPUT);
 
-  
+
   unsigned status;
 
   status = bmp.begin(0x76);
@@ -207,13 +207,13 @@ void setup() {
 
   //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
   xTaskCreatePinnedToCore(
-                    Task1code,   /* Task function. */
-                    "Task1",     /* name of task. */
-                    10000,       /* Stack size of task */
-                    NULL,        /* parameter of the task */
-                    1,           /* priority of the task */
-                    &Task1,      /* Task handle to keep track of created task */
-                    0);          /* pin task to core 0 */      
+    Task1code,   /* Task function. */
+    "Task1",     /* name of task. */
+    1000000,       /* Stack size of task */
+    NULL,        /* parameter of the task */
+    1,           /* priority of the task */
+    &Task1,      /* Task handle to keep track of created task */
+    0);          /* pin task to core 0 */
 
   client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
@@ -275,7 +275,7 @@ void loop() {
     Serial.print("Boton 5: ");
     Serial.println(estadoBotonEnter);
   */
-  Serial.println(estadoMaquinaGeneral);
+  //Serial.println(estadoMaquinaGeneral);
 
 
   temperatura = bmp.readTemperature();
@@ -350,7 +350,7 @@ void loop() {
 
 
 
-  }
+}
 
 
 
@@ -589,7 +589,7 @@ void maquinaDeEstadosGeneral () {
       if (cursorPantalla == 0 && estadoBotonIzquierda == PRESIONADO) {
         estadoMaquinaGeneral = RESTA_MQTT_GMT;
       }
-      
+
       if (cursorPantalla == 1 && estadoBotonDerecha == PRESIONADO && gmt < 12) {
         estadoMaquinaGeneral = SUMA_MQTT_GMT;
       }
@@ -1006,7 +1006,7 @@ void setup_rtc_ntp(void) {
 
 
 
-  void lecturaTiempoBot () {
+void lecturaTiempoBot () {
 
   if (millis() > lastTimeBotRan + botRequestDelay) {
     int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
@@ -1021,9 +1021,9 @@ void setup_rtc_ntp(void) {
   }
 
 
-  }
+}
 
-  void handleNewMessages(int numNewMessages) {
+void handleNewMessages(int numNewMessages) {
   Serial.println("Mensaje nuevo");
   Serial.println(String(numNewMessages));
 
@@ -1049,38 +1049,40 @@ void setup_rtc_ntp(void) {
 
   }
 
-  }
+}
 
 
-  void Task1code( void * pvParameters ){
+void Task1code( void * pvParameters ) {
   Serial.print("Task1 running on core ");
   Serial.println(xPortGetCoreID());
 
-  for(;;){
+  for (;;) {
+
+    lecturaTiempoBot();
+
     if (flagTemperatura == 0) {
 
-    if (temperatura > valorUmbralTemp) {
+      if (temperatura > valorUmbralTemp) {
 
-      flagTemperatura = 1;
+        flagTemperatura = 1;
 
-      bot.sendMessage(CHAT_ID, "La temperatura supero el valor umbral!!!", "");
-    }
-
-  }
-
-  if (flagTemperatura == 1) {
-
-
-    if (temperatura < valorUmbralTemp) {
-
-      flagTemperatura = 0;
-
-      bot.sendMessage(CHAT_ID, "La temperatura es menor al valor umbral", "");
+        bot.sendMessage(CHAT_ID, "La temperatura supero el valor umbral!!!", "");
+      }
 
     }
 
-  }
+    if (flagTemperatura == 1) {
 
-  lecturaTiempoBot();
-  } 
+
+      if (temperatura < valorUmbralTemp) {
+
+        flagTemperatura = 0;
+
+        bot.sendMessage(CHAT_ID, "La temperatura es menor al valor umbral", "");
+
+      }
+
+    }
+
+  }
 }
