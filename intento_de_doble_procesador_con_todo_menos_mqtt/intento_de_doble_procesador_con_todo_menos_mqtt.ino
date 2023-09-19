@@ -136,11 +136,11 @@ const char *ntpServer = "south-america.pool.ntp.org";
 long gmtOffset_sec = -10800;
 const int daylightOffset_sec = 0;
 
-//const char* ssid = "ORT-IoT";
-//const char* password = "OrtIOTnew22$2";
+const char* ssid = "ORT-IoT";
+const char* password = "OrtIOTnew22$2";
 
-const char* ssid = "ari";
-const char* password = "004367225aa";
+//const char* ssid = "ari";
+//const char* password = "004367225aa";
 
 struct tm timeinfo;
 
@@ -152,6 +152,7 @@ void pedir_lahora(void); // Declaracion de funcion
 void setup_rtc_ntp(void); // Declaracion de funcion
 
 TaskHandle_t Task1;
+TaskHandle_t Task2;
 
 void setup() {
 
@@ -167,6 +168,25 @@ void setup() {
   pinMode(PIN_LED_AMARILLO, OUTPUT);
   pinMode(PIN_LED_VERDE, OUTPUT);
 
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+  xTaskCreatePinnedToCore(
+    Task1code,   /* Task function. */
+    "Task1",     /* name of task. */
+    1000000,       /* Stack size of task */
+    NULL,        /* parameter of the task */
+    1,           /* priority of the task */
+    &Task1,      /* Task handle to keep track of created task */
+    0);          /* pin task to core 0 */
+
+
+  xTaskCreatePinnedToCore(
+    Task2code,   /* Task function. */
+    "Task2",     /* name of task. */
+    1000000,       /* Stack size of task */
+    NULL,        /* parameter of the task */
+    1,           /* priority of the task */
+    &Task2,      /* Task handle to keep track of created task */
+    1);
 
   unsigned status;
 
@@ -204,16 +224,6 @@ void setup() {
   }
   Serial.println(WiFi.localIP());
   Serial.println();
-
-  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
-  xTaskCreatePinnedToCore(
-    Task1code,   /* Task function. */
-    "Task1",     /* name of task. */
-    1000000,       /* Stack size of task */
-    NULL,        /* parameter of the task */
-    1,           /* priority of the task */
-    &Task1,      /* Task handle to keep track of created task */
-    0);          /* pin task to core 0 */
 
   client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
@@ -254,101 +264,107 @@ void setup() {
 
 
 
-void loop() {
+void Task2code( void * pvParameters ) {
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
 
-  milisActuales = millis();
+  for (;;) {
 
-  estadoBotonIzquierda = !digitalRead(PIN_BOTON_1);
-  estadoBotonDerecha = digitalRead(PIN_BOTON_2);
-  estadoBotonArriba = digitalRead(PIN_BOTON_3);
-  estadoBotonAbajo = digitalRead(PIN_BOTON_4);
-  estadoBotonEnter = digitalRead(PIN_BOTON_5);
+    milisActuales = millis();
 
-  /* Serial.print("Boton 1: ");
-    Serial.println(estadoBotonIzquierda);
-    Serial.print("Boton 2: ");
-    Serial.println(estadoBotonDerecha);
-    Serial.print("Boton 3: ");
-    Serial.println(estadoBotonArriba);
-    Serial.print("Boton 4: ");
-    Serial.println(estadoBotonAbajo);
-    Serial.print("Boton 5: ");
-    Serial.println(estadoBotonEnter);
-  */
-  //Serial.println(estadoMaquinaGeneral);
+    estadoBotonIzquierda = !digitalRead(PIN_BOTON_1);
+    estadoBotonDerecha = digitalRead(PIN_BOTON_2);
+    estadoBotonArriba = digitalRead(PIN_BOTON_3);
+    estadoBotonAbajo = digitalRead(PIN_BOTON_4);
+    estadoBotonEnter = digitalRead(PIN_BOTON_5);
+
+    /* Serial.print("Boton 1: ");
+      Serial.println(estadoBotonIzquierda);
+      Serial.print("Boton 2: ");
+      Serial.println(estadoBotonDerecha);
+      Serial.print("Boton 3: ");
+      Serial.println(estadoBotonArriba);
+      Serial.print("Boton 4: ");
+      Serial.println(estadoBotonAbajo);
+      Serial.print("Boton 5: ");
+      Serial.println(estadoBotonEnter);
+    */
+    //Serial.println(estadoMaquinaGeneral);
 
 
-  temperatura = bmp.readTemperature();
+    temperatura = bmp.readTemperature();
 
-  humedad = analogRead(PIN_SENSOR_HUMEDAD);
-  humedadPorcentaje = map(humedad, 0, 4095, 100, 0);
+    humedad = analogRead(PIN_SENSOR_HUMEDAD);
+    humedadPorcentaje = map(humedad, 0, 4095, 100, 0);
 
-  luz = lightMeter.readLightLevel();
-  luzPorcentaje = map(luz, 0, 65535, 0, 100);
+    luz = lightMeter.readLightLevel();
+    luzPorcentaje = map(luz, 0, 65535, 0, 100);
 
-  if (humedadPorcentaje <= valorUmbralHum1) {
-    digitalWrite(PIN_LED_VERDE, HIGH);
-    digitalWrite(PIN_LED_AMARILLO, LOW);
-    digitalWrite(PIN_LED_ROJO, LOW);
-    digitalWrite(PIN_RELE_COOLER, OFF);
-    estadoCooler = 0;
+    if (humedadPorcentaje <= valorUmbralHum1) {
+      digitalWrite(PIN_LED_VERDE, HIGH);
+      digitalWrite(PIN_LED_AMARILLO, LOW);
+      digitalWrite(PIN_LED_ROJO, LOW);
+      digitalWrite(PIN_RELE_COOLER, OFF);
+      estadoCooler = 0;
+
+    }
+
+    if (humedadPorcentaje > valorUmbralHum1 && humedadPorcentaje <= valorUmbralHum2) {
+      digitalWrite(PIN_LED_VERDE, LOW);
+      digitalWrite(PIN_LED_AMARILLO, HIGH);
+      digitalWrite(PIN_LED_ROJO, LOW);
+      digitalWrite(PIN_RELE_COOLER, OFF);
+      estadoCooler = 0;
+    }
+
+    if (humedadPorcentaje > valorUmbralHum2) {
+      digitalWrite(PIN_LED_VERDE, LOW);
+      digitalWrite(PIN_LED_AMARILLO, LOW);
+      digitalWrite(PIN_LED_ROJO, HIGH);
+      digitalWrite(PIN_RELE_COOLER, ON);
+      estadoCooler = 1;
+    }
+
+
+
+    if (valorUmbralHum1 < 0) {
+      valorUmbralHum1 = 0;
+    }
+    if (valorUmbralHum1 > 100) {
+      valorUmbralHum1 = 100;
+    }
+
+    if (valorUmbralHum2 < 0) {
+      valorUmbralHum2 = 0;
+    }
+    if (valorUmbralHum2 > 100) {
+      valorUmbralHum2 = 100;
+    }
+
+    if (gmtOffset_sec > 43200) {
+      gmtOffset_sec = 43200;
+    }
+
+    if (gmtOffset_sec < -43200) {
+      gmtOffset_sec = -43200;
+    }
+
+    if (gmt < -12) {
+      gmt = -12;
+    }
+
+    if (gmt > 12) {
+      gmt = 12;
+    }
+
+
+    maquinaDeEstadosGeneral();
+    movimientosCursor();
+
+
+
 
   }
-
-  if (humedadPorcentaje > valorUmbralHum1 && humedadPorcentaje <= valorUmbralHum2) {
-    digitalWrite(PIN_LED_VERDE, LOW);
-    digitalWrite(PIN_LED_AMARILLO, HIGH);
-    digitalWrite(PIN_LED_ROJO, LOW);
-    digitalWrite(PIN_RELE_COOLER, OFF);
-    estadoCooler = 0;
-  }
-
-  if (humedadPorcentaje > valorUmbralHum2) {
-    digitalWrite(PIN_LED_VERDE, LOW);
-    digitalWrite(PIN_LED_AMARILLO, LOW);
-    digitalWrite(PIN_LED_ROJO, HIGH);
-    digitalWrite(PIN_RELE_COOLER, ON);
-    estadoCooler = 1;
-  }
-
-
-
-  if (valorUmbralHum1 < 0) {
-    valorUmbralHum1 = 0;
-  }
-  if (valorUmbralHum1 > 100) {
-    valorUmbralHum1 = 100;
-  }
-
-  if (valorUmbralHum2 < 0) {
-    valorUmbralHum2 = 0;
-  }
-  if (valorUmbralHum2 > 100) {
-    valorUmbralHum2 = 100;
-  }
-
-  if (gmtOffset_sec > 43200) {
-    gmtOffset_sec = 43200;
-  }
-
-  if (gmtOffset_sec < -43200) {
-    gmtOffset_sec = -43200;
-  }
-
-  if (gmt < -12) {
-    gmt = -12;
-  }
-
-  if (gmt > 12) {
-    gmt = 12;
-  }
-
-
-  maquinaDeEstadosGeneral();
-  movimientosCursor();
-
-
-
 
 }
 
@@ -1058,7 +1074,7 @@ void Task1code( void * pvParameters ) {
 
   for (;;) {
 
-    lecturaTiempoBot();
+    //lecturaTiempoBot();
 
     if (flagTemperatura == 0) {
 
@@ -1085,4 +1101,8 @@ void Task1code( void * pvParameters ) {
     }
 
   }
+}
+
+void loop() {
+  Serial.println("loop");
 }
