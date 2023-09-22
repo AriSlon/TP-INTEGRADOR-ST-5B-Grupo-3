@@ -152,7 +152,7 @@ void pedir_lahora(void); // Declaracion de funcion
 void setup_rtc_ntp(void); // Declaracion de funcion
 
 
-const char name_device = 5B3x;  ////device numero de grupo 5A 1x siendo x el numero de grupo
+const char name_device = 3;  ////device numero de grupo 5A 1x siendo x el numero de grupo
 ///                        5B 2x siendo x el numero de grupo
 
 unsigned long milisActualesMqtt; ///valor actual

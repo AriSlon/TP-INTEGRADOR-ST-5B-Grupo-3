@@ -174,19 +174,12 @@ void setup() {
     "Task1",     /* name of task. */
     1000000,       /* Stack size of task */
     NULL,        /* parameter of the task */
-    1,           /* priority of the task */
+    0,           /* priority of the task */
     &Task1,      /* Task handle to keep track of created task */
     0);          /* pin task to core 0 */
 
 
-  xTaskCreatePinnedToCore(
-    Task2code,   /* Task function. */
-    "Task2",     /* name of task. */
-    1000000,       /* Stack size of task */
-    NULL,        /* parameter of the task */
-    1,           /* priority of the task */
-    &Task2,      /* Task handle to keep track of created task */
-    1);
+
 
   unsigned status;
 
@@ -264,11 +257,7 @@ void setup() {
 
 
 
-void Task2code( void * pvParameters ) {
-  Serial.print("Task2 running on core ");
-  Serial.println(xPortGetCoreID());
-
-  for (;;) {
+void loop(){
 
     milisActuales = millis();
 
@@ -366,7 +355,7 @@ void Task2code( void * pvParameters ) {
 
   }
 
-}
+
 
 
 
@@ -1073,36 +1062,12 @@ void Task1code( void * pvParameters ) {
   Serial.println(xPortGetCoreID());
 
   for (;;) {
-
-    //lecturaTiempoBot();
-
-    if (flagTemperatura == 0) {
-
-      if (temperatura > valorUmbralTemp) {
-
-        flagTemperatura = 1;
-
-        bot.sendMessage(CHAT_ID, "La temperatura supero el valor umbral!!!", "");
-      }
-
-    }
-
-    if (flagTemperatura == 1) {
+    
+  Serial.print("Task1 running on core ");
+  Serial.println(xPortGetCoreID());
+    lecturaTiempoBot();
 
 
-      if (temperatura < valorUmbralTemp) {
-
-        flagTemperatura = 0;
-
-        bot.sendMessage(CHAT_ID, "La temperatura es menor al valor umbral", "");
-
-      }
-
-    }
 
   }
-}
-
-void loop() {
-  Serial.println("loop");
 }
