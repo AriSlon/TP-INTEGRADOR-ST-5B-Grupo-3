@@ -16,6 +16,9 @@
 #include <Preferences.h>
 #include <ESP32Time.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+#include <ArduinoJson.h>
 #include "time.h"
 #include "AsyncMqttClient.h"
 #include "time.h"
@@ -54,9 +57,6 @@
 #define OFF 1
 #define ON 0
 
-#define INTERVALO_ENVIO_MQTT  10000//Intervalo de envio de datos mqtt
-#define INTERVALO_LECTURA_MQTT  20000//Intervalo de envio de datos mqtt
-
 #define PANTALLA_GENERAL 0
 #define ESPERA_GENERAL_UMBRALTEMP 1
 #define PANTALLA_UMBRAL_TEMPERATURA 2
@@ -80,6 +80,9 @@
 #define MQTT_PASSWORD "mirko15"
 #define MQTT_PUB "/esp32/datos_sensores"
 
+#define BOTtoken "6582349263:AAHnC5r8S53ASk3J4RTncCs0LZy2-jA65pY"
+#define CHAT_ID "5939693005"
+
 Adafruit_BMP280 bmp;
 
 BH1750 lightMeter(0x23);
@@ -89,10 +92,20 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 Preferences preferencesTemp;
 Preferences preferencesHum1;
 Preferences preferencesHum2;
+Preferences preferencesMqtt1;
+Preferences preferencesMqtt2;
 
 ESP32Time rtc;
 
 AsyncMqttClient mqttClient;
+
+WiFiClientSecure client;
+UniversalTelegramBot bot(BOTtoken, client);
+
+String mensaje = "La temperatura actual es: ";
+
+int botRequestDelay = 1000; /// intervalo
+unsigned long lastTimeBotRan; /// ultimo tiempo
 
 unsigned long milisActuales;
 unsigned long milisPrevios;
@@ -128,9 +141,13 @@ bool chequeoCursor;
 bool chequeoPantallaUmbral;
 bool prendidoBuzzer;
 
+bool flagTemperatura;
+
 float temperatura;
 
-int intervaloMqtt;
+int intervaloEnvioMqtt;
+int intervaloLecturaMqtt;
+
 int hora;
 int minutos;
 int gmt = -3;
@@ -152,14 +169,12 @@ void pedir_lahora(void); // Declaracion de funcion
 void setup_rtc_ntp(void); // Declaracion de funcion
 
 
-const char name_device = 3;  ////device numero de grupo 5A 1x siendo x el numero de grupo
+const char name_device = 23;  ////device numero de grupo 5A 1x siendo x el numero de grupo
 ///                        5B 2x siendo x el numero de grupo
 
 unsigned long milisActualesMqtt; ///valor actual
 unsigned long milisPreviosMqtt; ///variable para contar el tiempo actual
 unsigned long milisPreviosMqtt2; ///variable para contar el tiempo actual
-
-
 
 int i = 0;
 
@@ -184,6 +199,7 @@ typedef struct
 const int valor_max_struct = 1000; ///valor vector de struct
 estructura datos_struct [valor_max_struct];///Guardo valores hasta que lo pueda enviar
 estructura aux2 ;
+
 
 
 void setup() {
@@ -236,6 +252,10 @@ void setup() {
     Serial.print('.');
     delay(1000);
   }
+
+  client.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+
+  bot.sendMessage(CHAT_ID, "¡Conexion establecida entre el ESP y VeckiarBot!", "");
   Serial.println(WiFi.localIP());
   Serial.println();
 
@@ -251,12 +271,15 @@ void setup() {
   preferencesTemp.begin("memoria", valorUmbralTemp);
   preferencesHum1.begin("memoria2", valorUmbralHum1);
   preferencesHum2.begin("memoria3", valorUmbralHum2);
+  preferencesMqtt1.begin("memoria4", intervaloEnvioMqtt);
+  preferencesMqtt2.begin("memoria5", intervaloLecturaMqtt);
 
 
   valorUmbralTemp = preferencesTemp.getInt("memoria", 0);
   valorUmbralHum1 = preferencesHum1.getInt("memoria2", 0);
   valorUmbralHum2 = preferencesHum2.getInt("memoria3", 0);
-
+  intervaloEnvioMqtt = preferencesMqtt1.getInt("memoria4", 0);
+  intervaloLecturaMqtt = preferencesMqtt2.getInt("memoria5", 0);
 
   ledcSetup(BUZZER_CHANNEL, 2000, 8); // Configurar el canal PWM
   ledcAttachPin(BUZZER_PIN, BUZZER_CHANNEL); // Asociar el pin al canal PWM
@@ -333,12 +356,12 @@ void loop() {
     estadoCooler = 1;
   }
 
-  if (milisActualesMqtt - milisPreviosMqtt > INTERVALO_ENVIO_MQTT) {
+  if (milisActualesMqtt - milisPreviosMqtt > intervaloEnvioMqtt) {
     fun_envio_mqtt();
     milisPreviosMqtt = milisActualesMqtt;
   }
 
-  if (milisActualesMqtt - milisPreviosMqtt2 > INTERVALO_LECTURA_MQTT) {
+  if (milisActualesMqtt - milisPreviosMqtt2 > intervaloLecturaMqtt) {
     fun_entra();
     milisPreviosMqtt2 = milisActualesMqtt;
   }
@@ -374,7 +397,37 @@ void loop() {
     gmt = 12;
   }
 
+  if (intervaloEnvioMqtt < 0) {
+    intervaloEnvioMqtt = 0;
+  }
 
+  if (flagTemperatura == 0) {
+
+    if (temperatura > valorUmbralTemp) {
+
+      flagTemperatura = 1;
+
+      bot.sendMessage(CHAT_ID, "La temperatura supero el valor umbral!!!", "");
+    }
+
+  }
+
+  if (flagTemperatura == 1) {
+
+
+    if (temperatura < valorUmbralTemp) {
+
+      flagTemperatura = 0;
+
+      bot.sendMessage(CHAT_ID, "La temperatura es menor al valor umbral", "");
+
+    }
+
+  }
+
+
+
+  lecturaTiempoBot();
   maquinaDeEstadosGeneral();
   movimientosCursor();
 
@@ -617,11 +670,19 @@ void maquinaDeEstadosGeneral () {
         estadoMaquinaGeneral = RESTA_MQTT_GMT;
       }
 
-      if (cursorPantalla == 1 && estadoBotonDerecha == PRESIONADO && gmt < 12) {
+      if (cursorPantalla == 1 && estadoBotonDerecha == PRESIONADO) {
         estadoMaquinaGeneral = SUMA_MQTT_GMT;
       }
 
-      if (cursorPantalla == 1 && estadoBotonIzquierda == PRESIONADO && gmt > (-12)) {
+      if (cursorPantalla == 1 && estadoBotonIzquierda == PRESIONADO) {
+        estadoMaquinaGeneral = RESTA_MQTT_GMT;
+      }
+
+      if (cursorPantalla == 2 && estadoBotonDerecha == PRESIONADO && gmt < 12) {
+        estadoMaquinaGeneral = SUMA_MQTT_GMT;
+      }
+
+      if (cursorPantalla == 2 && estadoBotonIzquierda == PRESIONADO && gmt > (-12)) {
         estadoMaquinaGeneral = RESTA_MQTT_GMT;
       }
 
@@ -650,11 +711,17 @@ void maquinaDeEstadosGeneral () {
       pantallaMqttGmt();
 
       if (cursorPantalla == 0 && estadoBotonDerecha == SUELTO ) {
-        intervaloMqtt += 1;
+        intervaloEnvioMqtt += 5000;
         estadoMaquinaGeneral = PANTALLA_MQTT_GMT;
       }
 
       if (cursorPantalla == 1 && estadoBotonDerecha == SUELTO ) {
+        intervaloLecturaMqtt += 5000;
+        estadoMaquinaGeneral = PANTALLA_MQTT_GMT;
+      }
+
+
+      if (cursorPantalla == 2 && estadoBotonDerecha == SUELTO ) {
         gmt += 1;
         gmtOffset_sec = gmtOffset_sec + 3600;
         setup_rtc_ntp();
@@ -666,11 +733,16 @@ void maquinaDeEstadosGeneral () {
     case RESTA_MQTT_GMT:
 
       if (cursorPantalla == 0 && estadoBotonIzquierda == SUELTO ) {
-        intervaloMqtt -= 1;
+        intervaloEnvioMqtt -= 5000;
         estadoMaquinaGeneral = PANTALLA_MQTT_GMT;
       }
 
       if (cursorPantalla == 1 && estadoBotonIzquierda == SUELTO ) {
+        intervaloLecturaMqtt -= 5000;
+        estadoMaquinaGeneral = PANTALLA_MQTT_GMT;
+      }
+
+      if (cursorPantalla == 2 && estadoBotonIzquierda == SUELTO ) {
         gmt -= 1;
         gmtOffset_sec = gmtOffset_sec - 3600;
         setup_rtc_ntp();
@@ -684,6 +756,8 @@ void maquinaDeEstadosGeneral () {
       if (estadoBotonArriba == SUELTO) {
         lcd.clear();
         milisPrevios = 0;
+        preferencesMqtt1.putInt("memoria4", intervaloEnvioMqtt);
+        preferencesMqtt2.putInt("memoria5", intervaloLecturaMqtt);
         cursorPantalla = 3;
         estadoMaquinaGeneral = PANTALLA_GENERAL;
 
@@ -736,7 +810,7 @@ void maquinaDeEstadosGeneral () {
 void pantallaMenuGeneral() {
 
 
-  if ((milisActuales - milisPrevios) > 10000) {
+  if ((milisActuales - milisPrevios) > 2000) {
 
     lcd.setCursor(0, 0);
     lcd.print("Temp: ");
@@ -840,10 +914,14 @@ void pantallaUmbralHum() {
 void pantallaMqttGmt() {
 
   lcd.setCursor(0, 0);
-  lcd.print("MQTT: ");
-  lcd.print(intervaloMqtt);
+  lcd.print("Envio MQTT: ");
+  lcd.print(intervaloEnvioMqtt/1000);
 
   lcd.setCursor(0, 1);
+  lcd.print("Lectura MQTT: ");
+  lcd.print(intervaloLecturaMqtt/1000);
+
+  lcd.setCursor(0, 2);
   lcd.print("GMT: ");
   lcd.print(gmt);
 
@@ -1032,8 +1110,8 @@ void setup_rtc_ntp(void) {
 
 
 
-/*
-  void lecturaTiempoBot () {
+
+void lecturaTiempoBot () {
 
   if (millis() > lastTimeBotRan + botRequestDelay) {
     int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
@@ -1048,9 +1126,9 @@ void setup_rtc_ntp(void) {
   }
 
 
-  }
+}
 
-  void handleNewMessages(int numNewMessages) {
+void handleNewMessages(int numNewMessages) {
   Serial.println("Mensaje nuevo");
   Serial.println(String(numNewMessages));
 
@@ -1076,8 +1154,8 @@ void setup_rtc_ntp(void) {
 
   }
 
-  }
-*/
+}
+
 
 void setupmqtt()
 {
@@ -1214,8 +1292,9 @@ void fun_entra (void)
   datos_struct[indice_entra].time = timestamp;
   datos_struct[indice_entra].T1 = temperatura; /// leeo los datos //aca va la funcion de cada sensor
   datos_struct[indice_entra].H1 = humedadPorcentaje; //// se puede pasar por un parametro valor entre 0 y 100
-  datos_struct[indice_entra].luz = luzPorcentaje;
-  datos_struct[indice_entra].Alarma = 1;
+  datos_struct[indice_entra].luz = luzPorcentaje;//estadoCooler;
+  datos_struct[indice_entra].Alarma = 1; //estadoCooler;
+
   indice_entra++;
   Serial.print("saco valores de la struct ientra");
   Serial.println(indice_entra);
