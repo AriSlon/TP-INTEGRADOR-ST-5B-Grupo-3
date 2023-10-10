@@ -136,7 +136,7 @@ int cursorPantalla;
 
 int ultimoEstadoMaquina;
 
-bool estadoCooler;
+int estadoCooler;
 bool chequeoCursor;
 bool chequeoPantallaUmbral;
 bool prendidoBuzzer;
@@ -176,8 +176,6 @@ unsigned long milisActualesMqtt; ///valor actual
 unsigned long milisPreviosMqtt; ///variable para contar el tiempo actual
 unsigned long milisPreviosMqtt2; ///variable para contar el tiempo actual
 
-int i = 0;
-
 int indice_entra = 0; ///variables ingresar a la cola struct
 int indice_saca = 0;
 bool flag_vacio = 1;
@@ -193,8 +191,9 @@ typedef struct
   float T1;///tempe
   int H1;///humedad valor entre 0 y 100
   int luz;
-  bool Alarma;
+  int Alarma;
 } estructura ;
+
 
 const int valor_max_struct = 1000; ///valor vector de struct
 estructura datos_struct [valor_max_struct];///Guardo valores hasta que lo pueda enviar
@@ -357,13 +356,13 @@ void loop() {
   }
 
   if (milisActualesMqtt - milisPreviosMqtt > intervaloEnvioMqtt) {
-    fun_envio_mqtt();
     milisPreviosMqtt = milisActualesMqtt;
+    fun_envio_mqtt();
   }
 
   if (milisActualesMqtt - milisPreviosMqtt2 > intervaloLecturaMqtt) {
-    fun_entra();
     milisPreviosMqtt2 = milisActualesMqtt;
+    fun_entra();
   }
 
 
@@ -653,6 +652,7 @@ void maquinaDeEstadosGeneral () {
 
       if (estadoBotonAbajo == SUELTO) {
         lcd.clear();
+        ledcWrite(BUZZER_CHANNEL, 0);
         estadoMaquinaGeneral = PANTALLA_MQTT_GMT;
       }
 
@@ -915,11 +915,11 @@ void pantallaMqttGmt() {
 
   lcd.setCursor(0, 0);
   lcd.print("Envio MQTT: ");
-  lcd.print(intervaloEnvioMqtt/1000);
+  lcd.print(intervaloEnvioMqtt / 1000);
 
   lcd.setCursor(0, 1);
   lcd.print("Lectura MQTT: ");
-  lcd.print(intervaloLecturaMqtt/1000);
+  lcd.print(intervaloLecturaMqtt / 1000);
 
   lcd.setCursor(0, 2);
   lcd.print("GMT: ");
@@ -945,6 +945,37 @@ void pantallaMqttGmt() {
     lcd.print(&timeinfo, "%H:%M");
 
   }
+
+  if ((intervaloEnvioMqtt / 1000) < 10) {
+    lcd.setCursor(13, 0);
+    lcd.print(" ");
+  }
+
+  if ((intervaloEnvioMqtt / 1000) < 100) {
+    lcd.setCursor(14, 0);
+    lcd.print(" ");
+  }
+
+  if ((intervaloEnvioMqtt / 1000) < 1000) {
+    lcd.setCursor(15, 0);
+    lcd.print(" ");
+  }
+
+  if ((intervaloLecturaMqtt / 1000) < 10) {
+    lcd.setCursor(15, 1);
+    lcd.print(" ");
+  }
+
+  if ((intervaloLecturaMqtt / 1000) < 100) {
+    lcd.setCursor(16, 1);
+    lcd.print(" ");
+  }
+
+  if ((intervaloLecturaMqtt / 1000) < 1000) {
+    lcd.setCursor(17, 1);
+    lcd.print(" ");
+  }
+
 
   if (gmt > (-1) && gmt < 10) {
     lcd.setCursor(6, 1);
@@ -1182,7 +1213,7 @@ void fun_envio_mqtt ()
   {
     Serial.print("enviando");
     ////genero el string a enviar
-    snprintf (mqtt_payload, 150, "%u&%ld&%.2f&%.2f&%.2f&%u", name_device, aux2.time, aux2.T1, aux2.H1, aux2.luz, aux2.Alarma); //random(10,50)
+    snprintf (mqtt_payload, 150, "%u&%ld&%.2f&%d&%d&%d", name_device, aux2.time, aux2.T1, aux2.H1, aux2.luz, aux2.Alarma); //random(10,50)
     aux2.time = 0; ///limpio valores
     aux2.T1 = 0;
     aux2.H1 = 0;

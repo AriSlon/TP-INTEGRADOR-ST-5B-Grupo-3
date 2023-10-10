@@ -33,13 +33,13 @@ int indice_saca = 0;
 bool flag_vacio = 1;
 
 /////mqqtt
-#define MQTT_HOST IPAddress(10, 162, 24, 31)
-#define MQTT_PORT 1883
+#define MQTT_HOST IPAddress(10, 162, 24, 47)
+#define MQTT_PORT 1884
 #define MQTT_USERNAME "esp32"
 #define MQTT_PASSWORD "mirko15"
+#define MQTT_PUB "/esp32/datos_sensores"
 char mqtt_payload[150] ;  /////
 // Test MQTT Topic
-#define MQTT_PUB "/esp32/datos_sensores"
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
