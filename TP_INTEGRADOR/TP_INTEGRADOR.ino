@@ -154,7 +154,7 @@ int gmt = -3;
 
 long unsigned int timestamp; // hora
 const char *ntpServer = "south-america.pool.ntp.org";
-long gmtOffset_sec = -10800;
+long gmtOffset_sec = -10800; // GMT 1 = gmtOffset_sec = 3600. GMT -3 = gmtOffset_sec = -10800
 const int daylightOffset_sec = 0;
 
 const char* ssid = "ORT-IoT";
@@ -1133,10 +1133,10 @@ void buzzer() {
 
 void setup_rtc_ntp(void) {
 
-  // init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   timestamp = time(NULL);
   rtc.setTime(timestamp + gmtOffset_sec);
+  
 }
 
 
